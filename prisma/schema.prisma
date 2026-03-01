@@ -8,6 +8,457 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+model School {
+  id                     String               @id @default(cuid())
+  name                   String
+  city                   String
+  timezone               String               @default("Asia/Jakarta")
+  createdAt              DateTime             @default(now())
+  type                   SchoolType?
+  curriculum             String?
+  gradeBands             Json?
+  studentCount           Int?
+  deviceModel            DeviceModel?
+  ecosystem              Ecosystem?
+  connectivity           Connectivity?
+  constraints            String?
+  priorityOutcomes       Json?
+  transformationStage    SchoolStage          @default(ONBOARDING)
+  transformationProgress Int                  @default(0)
+  auditLogs              AuditLog[]
+  attachments            FileAttachment[]
+  gates                  ImplementationGate[]
+  inviteTokens           InviteToken[]
+  notifications          Notification[]
+  requests               Request[]
+  tools                  SchoolTool[]
+  students               Student[]
+  tickets                Ticket[]
+  toolUsageLogs          ToolUsageLog[]
+  updates                UpdatePost[]
+  users                  User[]
+
+  @@index([createdAt])
+}
+
+model ImplementationGate {
+  id          String     @id @default(cuid())
+  schoolId    String
+  key         String
+  title       String
+  description String?
+  order       Int        @default(0)
+  status      GateStatus @default(NOT_STARTED)
+  completedAt DateTime?
+  updatedAt   DateTime   @updatedAt
+  createdAt   DateTime   @default(now())
+  school      School     @relation(fields: [schoolId], references: [id])
+
+  @@unique([schoolId, key])
+  @@index([schoolId, order])
+}
+
+model KnowledgeArticle {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  title     String
+  category  String
+  excerpt   String?
+  body      String
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([published, createdAt])
+}
+
+model StackBundle {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String
+  category    String
+  description String
+  toolKeys    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([category])
+}
+
+model User {
+  id                  String               @id @default(cuid())
+  email               String               @unique
+  name                String
+  password            String
+  role                UserRole             @default(STAFF)
+  active              Boolean              @default(true)
+  schoolId            String?
+  createdAt           DateTime             @default(now())
+  auditActor          AuditLog[]           @relation("AuditActor")
+  attachments         FileAttachment[]     @relation("AttachmentUploader")
+  inviteSent          InviteToken[]        @relation("InviteSender")
+  notifications       Notification[]
+  passwordResetTokens PasswordResetToken[]
+  assignedRequests    Request[]            @relation("AssignedRequests")
+  submittedRequests   Request[]            @relation("SubmittedRequests")
+  requestComments     RequestComment[]
+  requestEvents       RequestEvent[]
+  assignedTickets     Ticket[]             @relation("AssignedTickets")
+  submittedTickets    Ticket[]             @relation("SubmittedTickets")
+  ticketComments      TicketComment[]
+  ticketEvents        TicketEvent[]
+  toolUsageLogs       ToolUsageLog[]
+  trainingCompletions TrainingCompletion[]
+  trainingProgress    TrainingProgress[]
+  school              School?              @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId])
+  @@index([role])
+}
+
+model AuthAttempt {
+  id        String   @id @default(cuid())
+  email     String
+  ip        String?
+  success   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([email, createdAt])
+}
+
+model InviteToken {
+  id          String    @id @default(cuid())
+  schoolId    String
+  email       String
+  role        UserRole  @default(STAFF)
+  tokenHash   String
+  invitedById String?
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  invitedBy   User?     @relation("InviteSender", fields: [invitedById], references: [id])
+  school      School    @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId, createdAt])
+  @@index([email])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  schoolId   String
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  actor      User?    @relation("AuditActor", fields: [actorId], references: [id])
+  school     School   @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId, createdAt])
+  @@index([actorId, createdAt])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  schoolId  String?
+  userId    String
+  type      NotificationType @default(INFO)
+  title     String
+  body      String?
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+  school    School?          @relation(fields: [schoolId], references: [id])
+  user      User             @relation(fields: [userId], references: [id])
+
+  @@index([userId, readAt])
+  @@index([schoolId, createdAt])
+}
+
+model Student {
+  id            String              @id @default(cuid())
+  schoolId      String
+  studentCode   String?
+  name          String
+  grade         Int
+  status        StudentStatus       @default(ACTIVE)
+  coachName     String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  requests      Request[]
+  school        School              @relation(fields: [schoolId], references: [id])
+  toolAccess    StudentToolAccess[]
+  toolUsageLogs ToolUsageLog[]
+
+  @@unique([schoolId, studentCode])
+  @@index([schoolId, name])
+}
+
+model Tool {
+  id            String              @id @default(cuid())
+  key           String              @unique
+  name          String
+  description   String
+  requests      Request[]
+  schoolTools   SchoolTool[]
+  studentAccess StudentToolAccess[]
+  requirements  ToolRequirement[]
+  usageLogs     ToolUsageLog[]
+
+  @@index([name])
+}
+
+model ToolRequirement {
+  id        String         @id @default(cuid())
+  toolId    String
+  moduleId  String
+  createdAt DateTime       @default(now())
+  module    TrainingModule @relation(fields: [moduleId], references: [id])
+  tool      Tool           @relation(fields: [toolId], references: [id])
+
+  @@unique([toolId, moduleId])
+  @@index([moduleId])
+}
+
+model SchoolTool {
+  id        String   @id @default(cuid())
+  schoolId  String
+  toolId    String
+  enabled   Boolean  @default(true)
+  eligible  String   @default("Grades 7–12")
+  updatedAt DateTime @updatedAt
+  school    School   @relation(fields: [schoolId], references: [id])
+  tool      Tool     @relation(fields: [toolId], references: [id])
+
+  @@unique([schoolId, toolId])
+  @@index([schoolId, enabled])
+}
+
+model StudentToolAccess {
+  id        String   @id @default(cuid())
+  studentId String
+  toolId    String
+  enabled   Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+  student   Student  @relation(fields: [studentId], references: [id])
+  tool      Tool     @relation(fields: [toolId], references: [id])
+
+  @@unique([studentId, toolId])
+  @@index([toolId])
+}
+
+model ToolUsageLog {
+  id        String   @id @default(cuid())
+  schoolId  String
+  toolId    String
+  studentId String?
+  actorId   String?
+  eventType String
+  metadata  Json?
+  createdAt DateTime @default(now())
+  actor     User?    @relation(fields: [actorId], references: [id])
+  school    School   @relation(fields: [schoolId], references: [id])
+  student   Student? @relation(fields: [studentId], references: [id])
+  tool      Tool     @relation(fields: [toolId], references: [id])
+
+  @@index([schoolId, createdAt])
+}
+
+model Request {
+  id                        String           @id @default(cuid())
+  schoolId                  String
+  kind                      String           @default("GENERAL")
+  type                      String
+  description               String?
+  status                    RequestStatus    @default(SUBMITTED)
+  decision                  RequestDecision  @default(PENDING)
+  submittedById             String?
+  assignedToId              String?
+  toolId                    String?
+  studentId                 String?
+  desiredSchoolToolEnabled  Boolean?
+  desiredStudentToolEnabled Boolean?
+  createdAt                 DateTime         @default(now())
+  updatedAt                 DateTime         @updatedAt
+  attachments               FileAttachment[]
+  assignedTo                User?            @relation("AssignedRequests", fields: [assignedToId], references: [id])
+  school                    School           @relation(fields: [schoolId], references: [id])
+  student                   Student?         @relation(fields: [studentId], references: [id])
+  submittedBy               User?            @relation("SubmittedRequests", fields: [submittedById], references: [id])
+  tool                      Tool?            @relation(fields: [toolId], references: [id])
+  comments                  RequestComment[]
+  events                    RequestEvent[]
+
+  @@index([schoolId, createdAt])
+  @@index([status, createdAt])
+}
+
+model RequestEvent {
+  id        String   @id @default(cuid())
+  requestId String
+  actorId   String?
+  type      String
+  message   String
+  metadata  Json?
+  createdAt DateTime @default(now())
+  actor     User?    @relation(fields: [actorId], references: [id])
+  request   Request  @relation(fields: [requestId], references: [id])
+
+  @@index([requestId, createdAt])
+}
+
+model RequestComment {
+  id        String   @id @default(cuid())
+  requestId String
+  authorId  String?
+  body      String
+  createdAt DateTime @default(now())
+  author    User?    @relation(fields: [authorId], references: [id])
+  request   Request  @relation(fields: [requestId], references: [id])
+
+  @@index([requestId, createdAt])
+}
+
+model Ticket {
+  id            String           @id @default(cuid())
+  schoolId      String
+  category      String
+  subject       String
+  description   String
+  status        TicketStatus     @default(OPEN)
+  submittedById String?
+  assignedToId  String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  attachments   FileAttachment[]
+  assignedTo    User?            @relation("AssignedTickets", fields: [assignedToId], references: [id])
+  school        School           @relation(fields: [schoolId], references: [id])
+  submittedBy   User?            @relation("SubmittedTickets", fields: [submittedById], references: [id])
+  comments      TicketComment[]
+  events        TicketEvent[]
+
+  @@index([schoolId, createdAt])
+  @@index([status, createdAt])
+}
+
+model TicketEvent {
+  id        String   @id @default(cuid())
+  ticketId  String
+  actorId   String?
+  type      String
+  message   String
+  metadata  Json?
+  createdAt DateTime @default(now())
+  actor     User?    @relation(fields: [actorId], references: [id])
+  ticket    Ticket   @relation(fields: [ticketId], references: [id])
+
+  @@index([ticketId, createdAt])
+}
+
+model TicketComment {
+  id        String   @id @default(cuid())
+  ticketId  String
+  authorId  String?
+  body      String
+  createdAt DateTime @default(now())
+  author    User?    @relation(fields: [authorId], references: [id])
+  ticket    Ticket   @relation(fields: [ticketId], references: [id])
+
+  @@index([ticketId, createdAt])
+}
+
+model TrainingModule {
+  id               String               @id @default(cuid())
+  key              String               @unique
+  title            String
+  description      String
+  totalLessons     Int                  @default(5)
+  currentVersion   Int                  @default(1)
+  createdAt        DateTime             @default(now())
+  toolRequirements ToolRequirement[]
+  completions      TrainingCompletion[]
+  progresses       TrainingProgress[]
+  updates          UpdatePost[]
+
+  @@index([createdAt])
+}
+
+model TrainingProgress {
+  id               String         @id @default(cuid())
+  userId           String
+  moduleId         String
+  version          Int
+  lessonsCompleted Int            @default(0)
+  updatedAt        DateTime       @updatedAt
+  module           TrainingModule @relation(fields: [moduleId], references: [id])
+  user             User           @relation(fields: [userId], references: [id])
+
+  @@unique([userId, moduleId, version])
+}
+
+model TrainingCompletion {
+  id          String         @id @default(cuid())
+  userId      String
+  moduleId    String
+  version     Int
+  completedAt DateTime       @default(now())
+  module      TrainingModule @relation(fields: [moduleId], references: [id])
+  user        User           @relation(fields: [userId], references: [id])
+
+  @@unique([userId, moduleId, version])
+}
+
+model UpdatePost {
+  id                 String          @id @default(cuid())
+  schoolId           String
+  month              String
+  title              String
+  body               String
+  requiresTraining   Boolean         @default(false)
+  trainingModuleId   String?
+  newTrainingVersion Int?
+  createdAt          DateTime        @default(now())
+  school             School          @relation(fields: [schoolId], references: [id])
+  trainingModule     TrainingModule? @relation(fields: [trainingModuleId], references: [id])
+
+  @@index([schoolId, createdAt])
+}
+
+model FileAttachment {
+  id           String   @id @default(cuid())
+  schoolId     String
+  uploadedById String?
+  requestId    String?
+  ticketId     String?
+  bucket       String
+  path         String
+  filename     String
+  mimeType     String
+  size         Int
+  createdAt    DateTime @default(now())
+  request      Request? @relation(fields: [requestId], references: [id])
+  school       School   @relation(fields: [schoolId], references: [id])
+  ticket       Ticket?  @relation(fields: [ticketId], references: [id])
+  uploadedBy   User?    @relation("AttachmentUploader", fields: [uploadedById], references: [id])
+
+  @@index([schoolId, createdAt])
+  @@index([requestId])
+  @@index([ticketId])
+}
+
 enum UserRole {
   SUPER_ADMIN
   ADMIN
@@ -47,7 +498,6 @@ enum NotificationType {
   ALERT
 }
 
-
 enum SchoolStage {
   ONBOARDING
   FOUNDATION
@@ -85,546 +535,4 @@ enum GateStatus {
   NOT_STARTED
   IN_PROGRESS
   COMPLETE
-}
-
-model School {
-  id        String   @id @default(cuid())
-  name      String
-  city      String
-  timezone  String   @default("Asia/Jakarta")
-  createdAt DateTime @default(now())
-
-  // School profile (Investor MVP)
-  type             SchoolType?
-  curriculum       String?
-  gradeBands       Json?
-  studentCount     Int?
-  deviceModel      DeviceModel?
-  ecosystem        Ecosystem?
-  connectivity     Connectivity?
-  constraints      String?
-  priorityOutcomes Json?
-
-  // Transformation status (Investor MVP)
-  transformationStage    SchoolStage @default(ONBOARDING)
-  transformationProgress Int         @default(0)
-
-  users       User[]
-  students    Student[]
-  tools       SchoolTool[]
-  requests    Request[]
-  tickets     Ticket[]
-  updates     UpdatePost[]
-  auditLogs   AuditLog[]
-  attachments FileAttachment[]
-  notifications Notification[]
-
-  gates ImplementationGate[]
-
-  // Required inverse relations for token + usage logging models
-  inviteTokens InviteToken[]
-  toolUsageLogs ToolUsageLog[]
-
-  @@index([createdAt])
-}
-
-
-model ImplementationGate {
-  id          String     @id @default(cuid())
-  schoolId    String
-  school      School     @relation(fields: [schoolId], references: [id])
-
-  key         String
-  title       String
-  description String?
-  order       Int        @default(0)
-  status      GateStatus @default(NOT_STARTED)
-
-  completedAt DateTime?
-  updatedAt   DateTime   @updatedAt
-  createdAt   DateTime   @default(now())
-
-  @@unique([schoolId, key])
-  @@index([schoolId, order])
-}
-
-model KnowledgeArticle {
-  id        String   @id @default(cuid())
-  slug      String   @unique
-  title     String
-  category  String
-  excerpt   String?
-  body      String
-  published Boolean  @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([category])
-  @@index([published, createdAt])
-}
-
-model StackBundle {
-  id          String   @id @default(cuid())
-  key         String   @unique
-  name        String
-  category    String
-  description String
-  toolKeys    Json?
-
-  createdAt DateTime @default(now())
-
-  @@index([category])
-}
-
-
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String
-  password  String
-  role      UserRole @default(STAFF)
-  active    Boolean  @default(true)
-
-  // SUPER_ADMIN can have no primary school; they switch via cookie-based context
-  schoolId  String?
-  school    School?  @relation(fields: [schoolId], references: [id])
-
-  createdAt DateTime @default(now())
-
-  submittedRequests Request[] @relation("SubmittedRequests")
-  assignedRequests  Request[] @relation("AssignedRequests")
-
-  submittedTickets Ticket[] @relation("SubmittedTickets")
-  assignedTickets  Ticket[] @relation("AssignedTickets")
-
-  requestComments RequestComment[]
-  ticketComments  TicketComment[]
-
-  trainingProgress    TrainingProgress[]
-  trainingCompletions TrainingCompletion[]
-
-  auditActor AuditLog[] @relation("AuditActor")
-  inviteSent InviteToken[] @relation("InviteSender")
-  passwordResetTokens PasswordResetToken[]
-  notifications Notification[]
-  attachments FileAttachment[] @relation("AttachmentUploader")
-
-  // Inverse relations (required by Prisma) for event/log models
-  toolUsageLogs ToolUsageLog[]
-  requestEvents RequestEvent[]
-  ticketEvents TicketEvent[]
-
-  @@index([schoolId])
-  @@index([role])
-}
-
-model AuthAttempt {
-  id        String   @id @default(cuid())
-  email     String
-  ip        String?
-  success   Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  @@index([email, createdAt])
-}
-
-model InviteToken {
-  id          String   @id @default(cuid())
-  schoolId    String
-  school      School   @relation(fields: [schoolId], references: [id])
-
-  email       String
-  role        UserRole @default(STAFF)
-
-  tokenHash   String
-  invitedById String?
-  invitedBy   User?    @relation("InviteSender", fields: [invitedById], references: [id])
-
-  expiresAt   DateTime
-  acceptedAt  DateTime?
-  createdAt   DateTime @default(now())
-
-  @@index([schoolId, createdAt])
-  @@index([email])
-}
-
-model PasswordResetToken {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-
-  tokenHash String
-  expiresAt DateTime
-  usedAt    DateTime?
-  createdAt DateTime @default(now())
-
-  @@index([userId, createdAt])
-}
-
-model AuditLog {
-  id         String   @id @default(cuid())
-  schoolId   String
-  school     School   @relation(fields: [schoolId], references: [id])
-
-  actorId    String?
-  actor      User?    @relation("AuditActor", fields: [actorId], references: [id])
-
-  action     String
-  entityType String
-  entityId   String?
-  metadata   Json?
-  createdAt  DateTime @default(now())
-
-  @@index([schoolId, createdAt])
-  @@index([actorId, createdAt])
-}
-
-model Notification {
-  id        String           @id @default(cuid())
-  schoolId  String?
-  school    School?          @relation(fields: [schoolId], references: [id])
-
-  userId    String
-  user      User             @relation(fields: [userId], references: [id])
-
-  type      NotificationType @default(INFO)
-  title     String
-  body      String?
-  link      String?
-  readAt    DateTime?
-  createdAt DateTime @default(now())
-
-  @@index([userId, readAt])
-  @@index([schoolId, createdAt])
-}
-
-model Student {
-  id         String        @id @default(cuid())
-  schoolId   String
-  school     School        @relation(fields: [schoolId], references: [id])
-
-  // Optional unique identifier per school (recommended for imports)
-  studentCode String?
-
-  name       String
-  grade      Int
-  status     StudentStatus @default(ACTIVE)
-  coachName  String?
-
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
-
-  toolAccess StudentToolAccess[]
-  requests   Request[]
-
-  // Inverse relation for usage logging
-  toolUsageLogs ToolUsageLog[]
-
-  @@unique([schoolId, studentCode])
-  @@index([schoolId, name])
-}
-
-model Tool {
-  id          String  @id @default(cuid())
-  key         String  @unique
-  name        String
-  description String
-
-  schoolTools    SchoolTool[]
-  studentAccess  StudentToolAccess[]
-  usageLogs      ToolUsageLog[]
-  requests       Request[]
-  requirements   ToolRequirement[]
-
-  @@index([name])
-}
-
-
-model ToolRequirement {
-  id       String @id @default(cuid())
-  toolId   String
-  tool     Tool   @relation(fields: [toolId], references: [id])
-
-  moduleId String
-  module   TrainingModule @relation(fields: [moduleId], references: [id])
-
-  createdAt DateTime @default(now())
-
-  @@unique([toolId, moduleId])
-  @@index([moduleId])
-}
-
-
-model SchoolTool {
-  id        String   @id @default(cuid())
-  schoolId  String
-  toolId    String
-
-  school    School   @relation(fields: [schoolId], references: [id])
-  tool      Tool     @relation(fields: [toolId], references: [id])
-
-  enabled   Boolean  @default(true)
-  eligible  String   @default("Grades 7–12")
-  updatedAt DateTime @updatedAt
-
-  @@unique([schoolId, toolId])
-  @@index([schoolId, enabled])
-}
-
-model StudentToolAccess {
-  id        String   @id @default(cuid())
-  studentId String
-  toolId    String
-
-  student   Student  @relation(fields: [studentId], references: [id])
-  tool      Tool     @relation(fields: [toolId], references: [id])
-
-  enabled   Boolean  @default(true)
-  updatedAt DateTime @updatedAt
-
-  @@unique([studentId, toolId])
-  @@index([toolId])
-}
-
-model ToolUsageLog {
-  id        String   @id @default(cuid())
-  schoolId  String
-  school    School   @relation(fields: [schoolId], references: [id])
-
-  toolId    String
-  tool      Tool     @relation(fields: [toolId], references: [id])
-
-  studentId String?
-  student   Student? @relation(fields: [studentId], references: [id])
-
-  actorId   String?
-  actor     User?    @relation(fields: [actorId], references: [id])
-
-  eventType String
-  metadata  Json?
-  createdAt DateTime @default(now())
-
-  @@index([schoolId, createdAt])
-}
-
-model Request {
-  id            String         @id @default(cuid())
-  schoolId      String
-  school        School         @relation(fields: [schoolId], references: [id])
-
-  kind          String         @default("GENERAL") // GENERAL | TOOL_ENABLE | STUDENT_TOOL_ACCESS
-  type          String
-  description   String?
-
-  status        RequestStatus  @default(SUBMITTED)
-  decision      RequestDecision @default(PENDING)
-
-  submittedById String?
-  submittedBy   User?          @relation("SubmittedRequests", fields: [submittedById], references: [id])
-
-  assignedToId  String?
-  assignedTo    User?          @relation("AssignedRequests", fields: [assignedToId], references: [id])
-
-  // Optional tool/student data for provisioning requests
-  toolId        String?
-  tool          Tool?          @relation(fields: [toolId], references: [id])
-
-  studentId     String?
-  student       Student?       @relation(fields: [studentId], references: [id])
-
-  desiredSchoolToolEnabled   Boolean?
-  desiredStudentToolEnabled  Boolean?
-
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-
-  comments      RequestComment[]
-  events        RequestEvent[]
-  attachments   FileAttachment[]
-
-  @@index([schoolId, createdAt])
-  @@index([status, createdAt])
-}
-
-model RequestEvent {
-  id        String   @id @default(cuid())
-  requestId String
-  request   Request  @relation(fields: [requestId], references: [id])
-
-  actorId   String?
-  actor     User?    @relation(fields: [actorId], references: [id])
-
-  type      String   // e.g. status.changed, assigned, decision.approved, attachment.added
-  message   String
-  metadata  Json?
-  createdAt DateTime @default(now())
-
-  @@index([requestId, createdAt])
-}
-
-model RequestComment {
-  id        String   @id @default(cuid())
-  requestId String
-  request   Request  @relation(fields: [requestId], references: [id])
-
-  authorId  String?
-  author    User?    @relation(fields: [authorId], references: [id])
-
-  body      String
-  createdAt DateTime @default(now())
-
-  @@index([requestId, createdAt])
-}
-
-model Ticket {
-  id            String       @id @default(cuid())
-  schoolId      String
-  school        School       @relation(fields: [schoolId], references: [id])
-
-  category      String
-  subject       String
-  description   String
-
-  status        TicketStatus @default(OPEN)
-
-  submittedById String?
-  submittedBy   User?        @relation("SubmittedTickets", fields: [submittedById], references: [id])
-
-  assignedToId  String?
-  assignedTo    User?        @relation("AssignedTickets", fields: [assignedToId], references: [id])
-
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-
-  comments      TicketComment[]
-  events        TicketEvent[]
-  attachments   FileAttachment[]
-
-  @@index([schoolId, createdAt])
-  @@index([status, createdAt])
-}
-
-model TicketEvent {
-  id        String   @id @default(cuid())
-  ticketId  String
-  ticket    Ticket   @relation(fields: [ticketId], references: [id])
-
-  actorId   String?
-  actor     User?    @relation(fields: [actorId], references: [id])
-
-  type      String
-  message   String
-  metadata  Json?
-  createdAt DateTime @default(now())
-
-  @@index([ticketId, createdAt])
-}
-
-model TicketComment {
-  id        String   @id @default(cuid())
-  ticketId  String
-  ticket    Ticket   @relation(fields: [ticketId], references: [id])
-
-  authorId  String?
-  author    User?    @relation(fields: [authorId], references: [id])
-
-  body      String
-  createdAt DateTime @default(now())
-
-  @@index([ticketId, createdAt])
-}
-
-model TrainingModule {
-  id             String   @id @default(cuid())
-  key            String   @unique
-  title          String
-  description    String
-  totalLessons   Int      @default(5)
-  currentVersion Int      @default(1)
-
-  createdAt DateTime @default(now())
-
-  progresses       TrainingProgress[]
-  completions      TrainingCompletion[]
-  updates          UpdatePost[]
-  toolRequirements ToolRequirement[]
-
-  @@index([createdAt])
-}
-
-
-model TrainingProgress {
-  id              String   @id @default(cuid())
-  userId          String
-  user            User     @relation(fields: [userId], references: [id])
-
-  moduleId        String
-  module          TrainingModule @relation(fields: [moduleId], references: [id])
-
-  version         Int
-  lessonsCompleted Int     @default(0)
-  updatedAt       DateTime @updatedAt
-
-  @@unique([userId, moduleId, version])
-}
-
-model TrainingCompletion {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-
-  moduleId    String
-  module      TrainingModule @relation(fields: [moduleId], references: [id])
-
-  version     Int
-  completedAt DateTime @default(now())
-
-  @@unique([userId, moduleId, version])
-}
-
-model UpdatePost {
-  id        String   @id @default(cuid())
-  schoolId  String
-  school    School   @relation(fields: [schoolId], references: [id])
-
-  month     String
-  title     String
-  body      String
-
-  requiresTraining Boolean @default(false)
-  trainingModuleId String?
-  trainingModule   TrainingModule? @relation(fields: [trainingModuleId], references: [id])
-  newTrainingVersion Int?
-
-  createdAt DateTime @default(now())
-
-  @@index([schoolId, createdAt])
-}
-
-model FileAttachment {
-  id        String   @id @default(cuid())
-  schoolId  String
-  school    School   @relation(fields: [schoolId], references: [id])
-
-  uploadedById String?
-  uploadedBy   User?    @relation("AttachmentUploader", fields: [uploadedById], references: [id])
-
-  requestId String?
-  request   Request? @relation(fields: [requestId], references: [id])
-
-  ticketId  String?
-  ticket    Ticket?  @relation(fields: [ticketId], references: [id])
-
-  bucket    String
-  path      String
-  filename  String
-  mimeType  String
-  size      Int
-
-  createdAt DateTime @default(now())
-
-  @@index([schoolId, createdAt])
-  @@index([requestId])
-  @@index([ticketId])
 }
