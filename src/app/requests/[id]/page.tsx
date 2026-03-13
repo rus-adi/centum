@@ -141,7 +141,7 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
                     <div className="text-sm font-medium text-gray-700">Assign</div>
                     <Select name="assignedToId" defaultValue={req.assignedToId ?? ""}>
                       <option value="">Unassigned</option>
-                      {assignees.map((u) => (
+                      {assignees.map((u: any) => (
                         <option key={u.id} value={u.id}>
                           {u.name} ({u.role})
                         </option>
@@ -212,7 +212,7 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {req.events.map((e) => (
+                {req.events.map((e: any) => (
                   <div key={e.id} className="rounded-lg border border-[var(--border)] px-3 py-2">
                     <div className="flex items-center justify-between text-xs text-gray-500">
                       <div>{e.actor?.name ?? "System"}</div>
@@ -239,7 +239,7 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
               </form>
 
               <div className="mt-4 space-y-2">
-                {req.attachments.map((a) => (
+                {req.attachments.map((a: any) => (
                   <div key={a.id} className="flex items-center justify-between rounded-lg border border-[var(--border)] px-3 py-2 text-sm">
                     <div className="min-w-0">
                       <div className="truncate font-medium text-gray-900">{a.filename}</div>
@@ -263,7 +263,7 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {req.comments.map((c) => (
+                {req.comments.map((c: any) => (
                   <div key={c.id} className="rounded-lg border border-[var(--border)] px-3 py-2">
                     <div className="flex items-center justify-between text-xs text-gray-500">
                       <div>{c.author?.name ?? "Unknown"}</div>

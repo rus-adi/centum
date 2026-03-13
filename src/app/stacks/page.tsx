@@ -15,7 +15,7 @@ export default async function StacksPage() {
     db.schoolBundleAdoption.findMany({ where: { schoolId } })
   ]);
 
-  const adoptionMap = new Map(adoptions.map((adoption: any) => [adoption.bundleId, adoption]));
+  const adoptionMap = new Map<string, any>(adoptions.map((adoption: any) => [adoption.bundleId, adoption]));
 
   return (
     <PageShell
