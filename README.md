@@ -1,107 +1,96 @@
-# Centum Partner Portal (Prisma + Postgres)
+# Centum Stack — School 2.0 Platform
 
-Investor-ready MVP partner portal for schools:
-- **Next.js App Router + TypeScript + Tailwind**
-- **Prisma + Postgres** (Supabase recommended)
-- **NextAuth Credentials** (bcrypt password hashing)
-- **Multi-school tenancy** + **SUPER_ADMIN** school switching
-- **RBAC** (SUPER_ADMIN / ADMIN / STAFF / IT / COACH / TEACHER)
-- **Students CRUD + CSV import with preview**
-- **Requests + Support Tickets workflows** (assignment, statuses, comments, timeline)
-- **Training progress** (lessons + completion) + **Updates that force retraining**
-- **Invites + password reset**
-- **Attachments** stored in **Supabase Storage**
-- **Audit log + Notifications**
+Centum Stack is a leadership-first, curriculum-agnostic School 2.0 transition platform for existing schools.
 
----
+It is not an LMS, not a SIS, and not a curriculum replacement. It is the operating layer for:
+- governance and policy retrieval
+- staged AI adoption
+- transformation readiness and executive reporting
+- curated tool adoption
+- low-cost recorded training
+- pack and bundle rollout
+- partner/license coordination
+- parent-facing growth assets
 
-## 1) Local setup
+## Stack
+- Next.js App Router + TypeScript + TailwindCSS
+- Prisma + PostgreSQL
+- NextAuth credentials auth
+- Multi-school tenancy with SUPER_ADMIN school switching
 
+## V2 product areas
+- `/dashboard` — Readiness & ROI
+- `/hq` — HQ Command Center
+- `/transformation` — Transformation Copilot
+- `/transformation/report` — Executive Report
+- `/governance` — School 2.0 Governance & Support Center
+- `/packs` — Transformation Packs
+- `/tools` — Tool Recommendations / Catalog 2.0
+- `/stacks` — Bundles
+- `/training` — Training Hub
+- `/partners` — Partner Ops
+- `/growth` — Growth Assets
+
+## Local setup
 ```bash
 npm install
 cp .env.example .env
 ```
 
-### Configure `.env`
-Minimum required:
+### Required env vars
 - `DATABASE_URL`
 - `DIRECT_URL`
 - `NEXTAUTH_SECRET`
 - `NEXTAUTH_URL`
 
-Optional (but recommended):
-- Supabase Storage: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_STORAGE_BUCKET`
-- Email: `RESEND_API_KEY` + `EMAIL_FROM` (or keep `EMAIL_DEBUG_LINKS=true` for dev)
+### Optional env vars
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_STORAGE_BUCKET`
+- `RESEND_API_KEY`
+- `EMAIL_FROM`
+- `EMAIL_DEBUG_LINKS`
+- `OPENAI_API_KEY`
+- `OPENAI_MODEL`
+- `OPENAI_BASE_URL`
 
-### Create DB schema + seed demo data
+## Database + seed
 ```bash
 npm run prisma:push
 npm run prisma:seed
 ```
 
-### Run
+## Run
 ```bash
 npm run dev
 ```
 
 Open http://localhost:3000
 
----
-
-## 2) Demo accounts (seeded)
-
+## Demo accounts
 Password for all demo users: `password`
 
-- `hq@centum.id` (**SUPER_ADMIN**)
-- `admin@centum.id` (**ADMIN**)
-- `staff@centum.id` (**STAFF**)
-- `it@centum.id` (**IT**)
+- `hq@centum.id`
+- `admin.harapan@centum.id`
+- `staff.harapan@centum.id`
+- `it.harapan@centum.id`
+- `admin.nusantara@centum.id`
+- `admin.bandung@centum.id`
 
----
+## Notes on AI behavior
+The Governance & Support Center is retrieval-first.
+- It retrieves the school’s own uploaded docs.
+- It quotes the source passages.
+- It links back to the source version.
+- If no live LLM credentials are configured, it falls back to deterministic answer assembly.
 
-## 3) Supabase Storage setup (attachments)
+## Deployment
+The project still supports Prisma + Postgres deployment on platforms such as Vercel or Supabase-backed hosting.
 
-1. In Supabase, create a Storage bucket (default: `attachments`).
-2. Set bucket visibility to **private** (recommended).
-3. Add env vars:
-   - `SUPABASE_URL`
-   - `SUPABASE_SERVICE_ROLE_KEY`
-   - `SUPABASE_STORAGE_BUCKET`
+For production:
+- run Prisma generate during install/build
+- run `prisma db push` or your preferred migration workflow
+- seed demo data only in non-production/demo environments
 
-Attachments are downloaded through an authenticated route (`/api/attachments/[id]`) that generates a **signed URL**.
-
----
-
-## 4) Deploy on Vercel (Supabase Postgres)
-
-1. Push repo to GitHub
-2. Create a Vercel project
-3. Add env vars in Vercel:
-   - `DATABASE_URL`
-   - `DIRECT_URL`
-   - `NEXTAUTH_SECRET`
-   - `NEXTAUTH_URL` (your Vercel domain)
-   - (optional) Supabase Storage + Email vars
-
-4. Set Build Command:
-   - `npm run vercel-build`
-
-This runs:
-- `prisma generate`
-- `prisma db push`
-- `next build`
-
-> For stricter production workflows, replace `db push` with Prisma migrations.
-
----
-
-## 5) RBAC summary (MVP defaults)
-
-- **SUPER_ADMIN**: manage all schools, switch active school
-- **ADMIN**: manage users, updates, tools, view audit log
-- **IT**: manage tool enablement + ticket/request assignment & resolution
-- **STAFF/COACH/TEACHER**: create students/requests/tickets and comment; limited destructive actions
-
-You can adjust rules in `src/lib/rbac.ts`.
-
-# centum
+## Documentation
+See `docs/V2_CHANGES.md` for the V2 architecture summary and route map.

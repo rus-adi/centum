@@ -1,100 +1,96 @@
 import { PageShell } from "@/components/layout/page-shell";
-import { prisma } from "@/lib/prisma";
-import { requireActiveSchool } from "@/lib/tenant";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { prisma } from "@/lib/prisma";
+import { requireActiveSchool } from "@/lib/tenant";
 import { completeNextLesson, resetTrainingProgress } from "@/app/actions/training";
-import { canDelete } from "@/lib/rbac";
 
 export default async function TrainingPage() {
-  const { session, schoolId } = await requireActiveSchool();
-  const role = session.user.role as any;
+  const { session } = await requireActiveSchool();
 
-  const modules = await prisma.trainingModule.findMany({ orderBy: { createdAt: "asc" } });
-
-  const [progresses, completions] = await Promise.all([
-    prisma.trainingProgress.findMany({ where: { userId: session.user.id } }),
-    prisma.trainingCompletion.findMany({ where: { userId: session.user.id } })
+  const [modules, completions, progressRows] = await Promise.all([
+    prisma.trainingModule.findMany({ orderBy: { createdAt: "asc" } }),
+    prisma.trainingCompletion.findMany({ where: { userId: session.user.id } }),
+    prisma.trainingProgress.findMany({ where: { userId: session.user.id } })
   ]);
 
-  const progMap = new Map(progresses.map((p) => [`${p.moduleId}:${p.version}`, p]));
-  const completionMap = new Map(completions.map((c) => [`${c.moduleId}:${c.version}`, c]));
-  const best: Record<string, number> = {};
-  for (const c of completions) best[c.moduleId] = Math.max(best[c.moduleId] ?? 0, c.version);
+  const bestCompletion = new Map<string, number>();
+  for (const completion of completions) {
+    bestCompletion.set(completion.moduleId, Math.max(bestCompletion.get(completion.moduleId) ?? 0, completion.version));
+  }
 
-  const canReset = canDelete(role); // reuse admin check
+  const bestProgress = new Map<string, number>();
+  for (const progress of progressRows) {
+    const key = `${progress.moduleId}:${progress.version}`;
+    bestProgress.set(key, Math.max(bestProgress.get(key) ?? 0, progress.lessonsCompleted));
+  }
 
   return (
-    <PageShell title="Training Hub">
-      <div className="grid gap-4 md:grid-cols-2">
-        {modules.map((m) => {
-          const version = m.currentVersion;
-          const progress = progMap.get(`${m.id}:${version}`);
-          const completion = completionMap.get(`${m.id}:${version}`);
-          const bestVersion = best[m.id] ?? 0;
-          const updateRequired = bestVersion > 0 && bestVersion < version;
-
-          const lessonsCompleted = progress?.lessonsCompleted ?? 0;
-          const pct = Math.round((lessonsCompleted / m.totalLessons) * 100);
-
+    <PageShell
+      title="Training Hub"
+      description="Recorded, self-serve training with transcripts, checklist-oriented delivery, attestation, and versioned completion tracking."
+    >
+      <div className="grid gap-4">
+        {modules.map((module) => {
+          const completedVersion = bestCompletion.get(module.id) ?? 0;
+          const progress = bestProgress.get(`${module.id}:${module.currentVersion}`) ?? 0;
+          const upToDate = completedVersion >= module.currentVersion;
+          const checklist = Array.isArray(module.checklist) ? module.checklist : [];
           return (
-            <Card key={m.id}>
+            <Card key={module.id}>
               <CardHeader>
-                <CardTitle>{m.title}</CardTitle>
-                <p className="mt-2 text-sm text-gray-600">{m.description}</p>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <CardTitle>{module.title}</CardTitle>
+                    <div className="mt-2 text-sm text-gray-600">{module.description}</div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Badge variant={upToDate ? "success" : "warning"}>{upToDate ? "Current" : `Version ${module.currentVersion}`}</Badge>
+                    {module.pillar ? <Badge variant="info">{module.pillar}</Badge> : null}
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="info">v{version}</Badge>
-                  {completion ? <Badge variant="success">Completed</Badge> : lessonsCompleted > 0 ? <Badge variant="warning">In progress</Badge> : <Badge variant="neutral">Not started</Badge>}
-                  {updateRequired && <Badge variant="danger">Update required</Badge>}
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 lg:grid-cols-[1.1fr,0.9fr]">
+                  <div className="space-y-3">
+                    {module.videoUrl ? (
+                      <a className="text-sm font-medium text-blue-700 hover:underline" href={module.videoUrl} target="_blank" rel="noreferrer">
+                        Open recorded training →
+                      </a>
+                    ) : null}
+                    {module.transcript ? (
+                      <div className="rounded-md border border-[var(--border)] bg-slate-50 p-3 text-sm text-gray-700">{module.transcript}</div>
+                    ) : null}
+                  </div>
+                  <div className="space-y-3">
+                    <div className="text-sm font-semibold text-gray-900">Checklist</div>
+                    {checklist.length ? (
+                      checklist.map((item: unknown) => (
+                        <div key={String(item)} className="rounded-md border border-[var(--border)] px-3 py-2 text-sm text-gray-700">{String(item)}</div>
+                      ))
+                    ) : (
+                      <div className="text-sm text-gray-600">No checklist provided yet.</div>
+                    )}
+                  </div>
                 </div>
 
-                <div className="mt-3 text-sm text-gray-700">
-                  Lessons: <span className="font-medium">{lessonsCompleted}</span> / {m.totalLessons} ({pct}%)
-                </div>
-
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {!completion && (
-                    <form action={completeNextLesson.bind(null, m.id)}>
-                      <Button variant="primary" type="submit">
-                        Complete next lesson
-                      </Button>
+                <div className="flex items-center justify-between gap-3 border-t border-[var(--border)] pt-4">
+                  <div className="text-sm text-gray-600">{progress}/{module.totalLessons} lessons completed for current version.</div>
+                  <div className="flex gap-2">
+                    <form action={completeNextLesson.bind(null, module.id)}>
+                      <Button variant="primary" type="submit">Complete next step</Button>
                     </form>
-                  )}
-                  {completion && (
-                    <div className="text-sm text-gray-600">
-                      Completed for current version.
-                    </div>
-                  )}
-                  {canReset && lessonsCompleted > 0 && !completion && (
-                    <form action={resetTrainingProgress.bind(null, m.id)}>
-                      <Button type="submit">Reset</Button>
+                    <form action={resetTrainingProgress.bind(null, module.id)}>
+                      <Button variant="ghost" type="submit">Reset</Button>
                     </form>
-                  )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
           );
         })}
       </div>
-
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>How “Update Required” works</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-sm text-gray-700 space-y-2">
-            <p>
-              When an admin posts an update that requires training, the related module version is automatically incremented (v1 → v2).
-            </p>
-            <p>
-              Anyone who completed an older version will see <span className="font-medium">Update required</span> until they finish the latest version.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
     </PageShell>
   );
 }

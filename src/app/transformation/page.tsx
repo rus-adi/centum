@@ -1,271 +1,161 @@
 import Link from "next/link";
 import { PageShell } from "@/components/layout/page-shell";
-import { prisma } from "@/lib/prisma";
-import { requireActiveSchool } from "@/lib/tenant";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Table, THead, TH, TD } from "@/components/ui/table";
+import { requireActiveSchool } from "@/lib/tenant";
+import { prisma } from "@/lib/prisma";
+import { generateCopilotRun, updateCopilotRecommendationStatus } from "@/app/actions/copilot";
 
-function stageBadge(stage: string) {
-  if (stage === "SCALE") return <Badge variant="success">Scale</Badge>;
-  if (stage === "PILOT") return <Badge variant="info">Pilot</Badge>;
-  if (stage === "FOUNDATION") return <Badge variant="warning">Foundation</Badge>;
-  return <Badge variant="neutral">Onboarding</Badge>;
-}
+const db = prisma as any;
 
-function gateBadge(status: string) {
-  if (status === "COMPLETE") return <Badge variant="success">Complete</Badge>;
-  if (status === "IN_PROGRESS") return <Badge variant="info">In progress</Badge>;
-  return <Badge variant="neutral">Not started</Badge>;
-}
-
-function pct(n: number) {
-  const v = Math.max(0, Math.min(100, Math.round(n)));
-  return v;
-}
-
-export default async function TransformationOverviewPage() {
+export default async function TransformationPage({
+  searchParams
+}: {
+  searchParams: { [key: string]: string | string[] | undefined };
+}) {
   const { schoolId, school } = await requireActiveSchool();
+  const runId = typeof searchParams.run === "string" ? searchParams.run : null;
 
-  const [gates, schoolTools, modules, usersCount, openRequests, openTickets] = await Promise.all([
-    prisma.implementationGate.findMany({ where: { schoolId }, orderBy: { order: "asc" } }),
-    prisma.schoolTool.findMany({ where: { schoolId }, include: { tool: true }, orderBy: { tool: { name: "asc" } } }),
-    prisma.trainingModule.findMany({ orderBy: { createdAt: "asc" } }),
-    prisma.user.count({ where: { schoolId, active: true } }),
-    prisma.request.count({ where: { schoolId, status: { not: "COMPLETED" } } }),
-    prisma.ticket.count({ where: { schoolId, status: { not: "COMPLETED" } } })
-  ]);
-
-  const gatesDone = gates.filter((g) => g.status === "COMPLETE").length;
-  const toolsEnabled = schoolTools.filter((t) => t.enabled).length;
-
-  // Training compliance = completions for current version across users, divided by (users * modules)
-  let completed = 0;
-  for (const m of modules) {
-    completed += await prisma.trainingCompletion.count({
-      where: { user: { schoolId }, moduleId: m.id, version: m.currentVersion }
-    });
-  }
-  const denom = usersCount * modules.length;
-  const trainingCompliance = denom > 0 ? Math.round((completed / denom) * 100) : 0;
-
-  const issues = openRequests + openTickets;
-
-  // Simple next actions: first 3 non-complete gates
-  const nextGates = gates.filter((g) => g.status !== "COMPLETE").slice(0, 3);
+  const latestRun = runId
+    ? await db.copilotRun.findFirst({ where: { id: runId, schoolId }, include: { recommendations: true } })
+    : await db.copilotRun.findFirst({ where: { schoolId }, include: { recommendations: true }, orderBy: { createdAt: "desc" } });
 
   return (
-    <PageShell title="Transformation Overview">
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <PageShell
+      title="Transformation Copilot"
+      description="Review readiness, blockers, bundles, packs, training, and a draft 30 / 60 / 90 day plan before approving change."
+    >
+      <div className="grid gap-4 lg:grid-cols-[1.15fr,0.85fr]">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-3">
             <div>
-              <div className="text-sm text-gray-500">{school.name}</div>
-              <div className="mt-1 flex items-center gap-2">
-                {stageBadge(school.transformationStage)}
-                <span className="text-sm text-gray-500">•</span>
-                <span className="text-sm text-gray-500">{school.city}</span>
-                <span className="text-sm text-gray-500">•</span>
-                <span className="text-sm text-gray-700">{pct(school.transformationProgress)}% complete</span>
-              </div>
-
-              <div className="mt-3 h-2 w-full max-w-[520px] rounded-full bg-gray-100">
-                <div
-                  className="h-2 rounded-full bg-blue-600"
-                  style={{ width: `${pct(school.transformationProgress)}%` }}
-                />
-              </div>
+              <CardTitle>Copilot workspace</CardTitle>
+              <p className="mt-2 text-sm text-gray-600">
+                {latestRun ? "Latest review ready for leadership approval." : "Generate a first School 2.0 transformation review for this school."}
+              </p>
             </div>
-
-            <div className="flex flex-wrap gap-2">
-              <Link href="/transformation/report">
-                <Button variant="secondary">Export executive report</Button>
-              </Link>
-              <Link href="/tools">
-                <Button variant="primary">Manage tools</Button>
-              </Link>
-            </div>
-          </div>
-
-          <div className="mt-5 grid gap-3 md:grid-cols-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Gates completed</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-semibold text-gray-900">
-                  {gatesDone}/{gates.length}
-                </div>
-                <div className="mt-1 text-xs text-gray-500">Implementation readiness</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Tools enabled</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-semibold text-gray-900">
-                  {toolsEnabled}/{schoolTools.length}
-                </div>
-                <div className="mt-1 text-xs text-gray-500">Approved stack coverage</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Training compliance</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <div className="text-2xl font-semibold text-gray-900">{trainingCompliance}%</div>
-                  <Badge variant={trainingCompliance >= 80 ? "success" : trainingCompliance >= 50 ? "warning" : "danger"}>
-                    {trainingCompliance >= 80 ? "Healthy" : trainingCompliance >= 50 ? "At risk" : "Critical"}
-                  </Badge>
-                </div>
-                <div className="mt-1 text-xs text-gray-500">Across active staff accounts</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Open issues</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-semibold text-gray-900">{issues}</div>
-                <div className="mt-1 text-xs text-gray-500">
-                  Requests {openRequests} • Tickets {openTickets}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Implementation gates</CardTitle>
-            <p className="mt-2 text-sm text-gray-600">A simple gate model to track readiness and rollout progress.</p>
+            <form action={generateCopilotRun}>
+              <Button variant="primary" type="submit">{latestRun ? "Refresh copilot" : "Generate copilot"}</Button>
+            </form>
           </CardHeader>
-          <CardContent>
-            <Table>
-              <THead>
-                <tr>
-                  <TH>Gate</TH>
-                  <TH>Status</TH>
-                </tr>
-              </THead>
-              <tbody>
-                {gates.map((g) => (
-                  <tr key={g.id}>
-                    <TD>
-                      <div className="font-medium text-gray-900">{g.title}</div>
-                      {g.description && <div className="mt-1 text-xs text-gray-500">{g.description}</div>}
-                    </TD>
-                    <TD>{gateBadge(g.status)}</TD>
-                  </tr>
-                ))}
-                {gates.length === 0 && (
-                  <tr>
-                    <TD colSpan={2} className="text-center text-gray-500">
-                      No gates configured yet.
-                    </TD>
-                  </tr>
-                )}
-              </tbody>
-            </Table>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Next actions</CardTitle>
-            <p className="mt-2 text-sm text-gray-600">What Centum should do next to move the school forward.</p>
-          </CardHeader>
-          <CardContent>
-            <ol className="list-decimal space-y-3 pl-5 text-sm text-gray-800">
-              {nextGates.map((g) => (
-                <li key={g.id}>
-                  <div className="font-medium">{g.title}</div>
-                  <div className="text-gray-600">
-                    {g.description || "Complete this gate to increase readiness."}
+          <CardContent className="space-y-5">
+            {latestRun ? (
+              <>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div className="rounded-lg border border-[var(--border)] bg-slate-50 p-4">
+                    <div className="text-sm font-medium text-gray-700">Readiness</div>
+                    <div className="mt-2 text-3xl font-semibold text-gray-900">{latestRun.readinessScore}</div>
                   </div>
-                </li>
-              ))}
-              {nextGates.length === 0 && <li>All gates complete — focus on measurement and iteration.</li>}
-            </ol>
+                  <div className="rounded-lg border border-[var(--border)] bg-slate-50 p-4">
+                    <div className="text-sm font-medium text-gray-700">Maturity</div>
+                    <div className="mt-2 text-3xl font-semibold text-gray-900">{latestRun.maturityScore}</div>
+                  </div>
+                </div>
 
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Link href="/requests/new">
-                <Button variant="secondary">Create request</Button>
-              </Link>
-              <Link href="/support/new">
-                <Button variant="secondary">Create support ticket</Button>
-              </Link>
-              <Link href="/knowledge">
-                <Button variant="secondary">Open knowledge base</Button>
-              </Link>
-            </div>
+                <div>
+                  <div className="text-sm font-semibold text-gray-900">Maturity summary</div>
+                  <p className="mt-2 whitespace-pre-line text-sm leading-6 text-gray-700">{latestRun.maturitySummary}</p>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <div className="text-sm font-semibold text-gray-900">Blockers</div>
+                    <div className="mt-2 space-y-2">
+                      {Array.isArray(latestRun.blockers) && latestRun.blockers.length ? (
+                        latestRun.blockers.map((item: string) => (
+                          <div key={item} className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                            {item}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-sm text-gray-600">No blockers recorded.</div>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-gray-900">Next actions</div>
+                    <div className="mt-2 space-y-2">
+                      {Array.isArray(latestRun.nextActions) && latestRun.nextActions.length ? (
+                        latestRun.nextActions.map((item: string) => (
+                          <div key={item} className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
+                            {item}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-sm text-gray-600">No next actions recorded.</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="rounded-lg border border-[var(--border)] bg-slate-50 px-4 py-6 text-sm text-gray-600">
+                No copilot run exists yet for <span className="font-medium text-gray-900">{school.name}</span>.
+              </div>
+            )}
           </CardContent>
         </Card>
+
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Recommendations</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {latestRun?.recommendations?.length ? (
+                latestRun.recommendations.slice(0, 8).map((recommendation: any) => (
+                  <div key={recommendation.id} className="rounded-lg border border-[var(--border)] p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="text-sm font-semibold text-gray-900">{recommendation.title}</div>
+                        <div className="mt-1 text-sm text-gray-600">{recommendation.description}</div>
+                      </div>
+                      <Badge variant={recommendation.status === "ACCEPTED" ? "success" : recommendation.status === "DEFERRED" ? "warning" : "neutral"}>
+                        {recommendation.status}
+                      </Badge>
+                    </div>
+                    <div className="mt-3 flex gap-2">
+                      <form action={updateCopilotRecommendationStatus}>
+                        <input type="hidden" name="recommendationId" value={recommendation.id} />
+                        <input type="hidden" name="status" value="ACCEPTED" />
+                        <Button variant="secondary" type="submit">Accept</Button>
+                      </form>
+                      <form action={updateCopilotRecommendationStatus}>
+                        <input type="hidden" name="recommendationId" value={recommendation.id} />
+                        <input type="hidden" name="status" value="DEFERRED" />
+                        <Button variant="ghost" type="submit">Defer</Button>
+                      </form>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-sm text-gray-600">Run the copilot to generate recommendations.</div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Linked workspaces</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-2">
+              <Link className="rounded-md border border-[var(--border)] px-3 py-2 text-sm hover:bg-gray-50" href="/packs">
+                Open Transformation Packs →
+              </Link>
+              <Link className="rounded-md border border-[var(--border)] px-3 py-2 text-sm hover:bg-gray-50" href="/stacks">
+                Review recommended bundles →
+              </Link>
+              <Link className="rounded-md border border-[var(--border)] px-3 py-2 text-sm hover:bg-gray-50" href="/training">
+                Review suggested training →
+              </Link>
+              <Link className="rounded-md border border-[var(--border)] px-3 py-2 text-sm hover:bg-gray-50" href="/transformation/report">
+                Open executive report →
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-
-      <Card className="mt-4">
-        <CardHeader>
-          <CardTitle>School profile snapshot</CardTitle>
-          <p className="mt-2 text-sm text-gray-600">A quick view of the information captured for rollout planning.</p>
-        </CardHeader>
-        <CardContent className="grid gap-3 text-sm md:grid-cols-2">
-          <div>
-            <div className="text-xs text-gray-500">Type</div>
-            <div className="font-medium text-gray-900">{school.type ?? "—"}</div>
-          </div>
-          <div>
-            <div className="text-xs text-gray-500">Curriculum</div>
-            <div className="font-medium text-gray-900">{school.curriculum ?? "—"}</div>
-          </div>
-          <div>
-            <div className="text-xs text-gray-500">Grade bands</div>
-            <div className="font-medium text-gray-900">
-              {Array.isArray(school.gradeBands) ? (school.gradeBands as any[]).join(", ") : "—"}
-            </div>
-          </div>
-          <div>
-            <div className="text-xs text-gray-500">Students</div>
-            <div className="font-medium text-gray-900">{school.studentCount ?? "—"}</div>
-          </div>
-          <div>
-            <div className="text-xs text-gray-500">Device model</div>
-            <div className="font-medium text-gray-900">{school.deviceModel ?? "—"}</div>
-          </div>
-          <div>
-            <div className="text-xs text-gray-500">Ecosystem</div>
-            <div className="font-medium text-gray-900">{school.ecosystem ?? "—"}</div>
-          </div>
-          <div>
-            <div className="text-xs text-gray-500">Connectivity</div>
-            <div className="font-medium text-gray-900">{school.connectivity ?? "—"}</div>
-          </div>
-          <div>
-            <div className="text-xs text-gray-500">Priority outcomes</div>
-            <div className="font-medium text-gray-900">
-              {Array.isArray(school.priorityOutcomes) ? (school.priorityOutcomes as any[]).join(", ") : "—"}
-            </div>
-          </div>
-
-          <div className="md:col-span-2">
-            <div className="text-xs text-gray-500">Constraints / non-negotiables</div>
-            <div className="mt-1 whitespace-pre-wrap rounded-lg border border-[var(--border)] bg-gray-50 p-3 text-sm text-gray-800">
-              {school.constraints ?? "—"}
-            </div>
-          </div>
-
-          <div className="md:col-span-2 flex justify-end">
-            <Link href="/settings">
-              <Button variant="primary">Edit school profile</Button>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
     </PageShell>
   );
 }

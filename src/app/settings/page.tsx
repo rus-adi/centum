@@ -7,454 +7,225 @@ import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { ConfirmActionForm } from "@/components/ui/confirm-action-form";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { createInvite } from "@/app/actions/auth";
 import { createSchool, setActiveSchool } from "@/app/actions/tenant";
 import { deleteUser, setUserActive, setUserRole, updateSchool } from "@/app/actions/settings";
 import { isAdminRole, roleLabel } from "@/lib/session";
 import { formatDateTime } from "@/lib/format";
-import { RolePermissionsCard } from "@/components/settings/role-permissions";
 
 export default async function SettingsPage() {
   const { session, schoolId, school, isSuperAdmin } = await requireActiveSchool();
-
   const canAdmin = isAdminRole(session.user.role);
 
-  const [users, invites, auditLogs] = await Promise.all([
+  const [users, invites, schools] = await Promise.all([
     prisma.user.findMany({ where: { schoolId }, orderBy: { createdAt: "asc" } }),
     prisma.inviteToken.findMany({
       where: { schoolId, acceptedAt: null, expiresAt: { gt: new Date() } },
       orderBy: { createdAt: "desc" },
       take: 10
     }),
-    prisma.auditLog.findMany({
-      where: { schoolId },
-      include: { actor: true },
-      orderBy: { createdAt: "desc" },
-      take: 30
-    })
+    isSuperAdmin ? prisma.school.findMany({ orderBy: { createdAt: "asc" } }) : Promise.resolve([])
   ]);
 
-  const schools = isSuperAdmin
-    ? await prisma.school.findMany({ orderBy: { createdAt: "asc" } })
-    : [];
-
   const gradeBands = Array.isArray(school.gradeBands) ? (school.gradeBands as any[]).map(String) : [];
-  const priorityOutcomes = Array.isArray(school.priorityOutcomes)
-    ? (school.priorityOutcomes as any[]).map(String)
-    : [];
+  const priorityOutcomes = Array.isArray(school.priorityOutcomes) ? (school.priorityOutcomes as any[]).map(String) : [];
+  const currentTooling = Array.isArray((school as any).currentTooling) ? ((school as any).currentTooling as any[]).map(String) : [];
 
   return (
-    <PageShell title="Settings">
+    <PageShell
+      title="Settings"
+      description="Account settings, school profile, leadership goals, user access, and active school context."
+    >
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
-          <CardHeader>
-            <CardTitle>Account</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
+          <CardHeader><CardTitle>Account</CardTitle></CardHeader>
+          <CardContent className="space-y-3 text-sm">
             <div>
               <div className="text-gray-500">Signed in as</div>
               <div className="font-medium text-gray-900">{session.user.email}</div>
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="info">{roleLabel(session.user.role)}</Badge>
-              {isSuperAdmin && <Badge variant="warning">Multi-school</Badge>}
+              {isSuperAdmin ? <Badge variant="warning">Multi-school</Badge> : null}
             </div>
-            <div className="pt-3">
-              <SignOutButton />
-            </div>
+            <SignOutButton />
           </CardContent>
         </Card>
 
-        {isSuperAdmin && (
+        {isSuperAdmin ? (
           <Card>
             <CardHeader>
-              <CardTitle>School context (Super Admin)</CardTitle>
-              <p className="mt-2 text-sm text-gray-600">
-                Choose which school you are currently viewing. Stored in cookie{" "}
-                <span className="font-mono">{activeSchoolCookieName()}</span>.
-              </p>
+              <CardTitle>School context</CardTitle>
+              <p className="mt-2 text-sm text-gray-600">Choose the active school. The selection is stored in <span className="font-mono">{activeSchoolCookieName()}</span>.</p>
             </CardHeader>
-            <CardContent>
-              <form className="flex flex-col gap-2" action={setActiveSchool}>
+            <CardContent className="space-y-4">
+              <form className="space-y-3" action={setActiveSchool}>
                 <Select name="schoolId" defaultValue={schoolId}>
-                  {schools.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} — {s.city}
-                    </option>
-                  ))}
+                  {schools.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
                 </Select>
-                <Button type="submit">Switch school</Button>
+                <input type="hidden" name="redirectTo" value="/settings" />
+                <Button variant="secondary" type="submit">Switch context</Button>
               </form>
-
-              <div className="mt-4 rounded-lg border border-[var(--border)] bg-gray-50 px-4 py-3 text-sm text-gray-700">
-                <div className="font-medium">Create a new school</div>
-                <form className="mt-3 grid gap-3 md:grid-cols-2" action={createSchool}>
-                  <div className="md:col-span-2">
-                    <label className="mb-1 block text-xs font-medium text-gray-600">School name</label>
-                    <Input name="name" placeholder="School name" required />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-600">City</label>
-                    <Input name="city" placeholder="City" required />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-600">Timezone</label>
-                    <Input name="timezone" defaultValue="Asia/Jakarta" />
-                  </div>
-                  <div className="md:col-span-2 flex justify-end">
-                    <Button variant="primary" type="submit">
-                      Create school
-                    </Button>
-                  </div>
-                </form>
-              </div>
+              <form className="space-y-3 border-t border-[var(--border)] pt-4" action={createSchool}>
+                <Input name="name" placeholder="New school name" />
+                <Input name="city" placeholder="City" />
+                <Input name="timezone" defaultValue="Asia/Jakarta" placeholder="Timezone" />
+                <Button variant="primary" type="submit">Create school</Button>
+              </form>
             </CardContent>
           </Card>
-        )}
+        ) : null}
       </div>
 
-      <div className="mt-4 grid gap-4 md:grid-cols-2">
+      <div className="mt-6 grid gap-4 lg:grid-cols-[1.1fr,0.9fr]">
         <Card>
-          <CardHeader>
-            <CardTitle>School profile</CardTitle>
-            {!canAdmin && <p className="mt-2 text-sm text-gray-600">Read-only: ask an admin to update.</p>}
-          </CardHeader>
+          <CardHeader><CardTitle>School profile 2.0</CardTitle></CardHeader>
           <CardContent>
-            <form className="grid gap-4" action={updateSchool}>
+            <form className="space-y-4" action={updateSchool}>
               <div className="grid gap-3 md:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Name</label>
-                  <Input name="name" defaultValue={school.name} disabled={!canAdmin} />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">City</label>
-                  <Input name="city" defaultValue={school.city} disabled={!canAdmin} />
-                </div>
+                <Input name="name" defaultValue={school.name} placeholder="School name" disabled={!canAdmin} />
+                <Input name="city" defaultValue={school.city} placeholder="City" disabled={!canAdmin} />
+                <Input name="region" defaultValue={(school as any).region ?? ""} placeholder="Region" disabled={!canAdmin} />
+                <Input name="timezone" defaultValue={school.timezone} placeholder="Timezone" disabled={!canAdmin} />
+                <Input name="curriculum" defaultValue={school.curriculum ?? ""} placeholder="Curriculum" disabled={!canAdmin} />
+                <Input name="curriculumNotes" defaultValue={(school as any).curriculumNotes ?? ""} placeholder="Curriculum notes" disabled={!canAdmin} />
+                <Input name="studentCount" defaultValue={school.studentCount ?? ""} placeholder="Student count" disabled={!canAdmin} />
+                <Input name="enrollment" defaultValue={(school as any).enrollment ?? ""} placeholder="Enrollment" disabled={!canAdmin} />
+                <Input name="staffCount" defaultValue={(school as any).staffCount ?? ""} placeholder="Staff count" disabled={!canAdmin} />
+                <Input name="deviceRatio" defaultValue={(school as any).deviceRatio ?? ""} placeholder="Device ratio" disabled={!canAdmin} />
               </div>
 
               <div className="grid gap-3 md:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Timezone</label>
-                  <Input name="timezone" defaultValue={school.timezone} disabled={!canAdmin} />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">School type</label>
-                  <Select name="type" defaultValue={school.type ?? ""} disabled={!canAdmin}>
-                    <option value="">—</option>
-                    <option value="PUBLIC">PUBLIC</option>
-                    <option value="PRIVATE">PRIVATE</option>
-                    <option value="INTERNATIONAL">INTERNATIONAL</option>
-                    <option value="HYBRID">HYBRID</option>
-                  </Select>
+                <Select name="type" defaultValue={school.type ?? ""} disabled={!canAdmin}>
+                  <option value="">School type</option>
+                  <option value="PUBLIC">PUBLIC</option>
+                  <option value="PRIVATE">PRIVATE</option>
+                  <option value="INTERNATIONAL">INTERNATIONAL</option>
+                  <option value="HYBRID">HYBRID</option>
+                </Select>
+                <Select name="deviceModel" defaultValue={school.deviceModel ?? ""} disabled={!canAdmin}>
+                  <option value="">Device model</option>
+                  <option value="ONE_TO_ONE">ONE_TO_ONE</option>
+                  <option value="SHARED">SHARED</option>
+                  <option value="LAB_ONLY">LAB_ONLY</option>
+                  <option value="BYOD">BYOD</option>
+                </Select>
+                <Select name="connectivity" defaultValue={school.connectivity ?? ""} disabled={!canAdmin}>
+                  <option value="">Connectivity</option>
+                  <option value="LOW">LOW</option>
+                  <option value="MEDIUM">MEDIUM</option>
+                  <option value="HIGH">HIGH</option>
+                </Select>
+                <Select name="ecosystem" defaultValue={school.ecosystem ?? ""} disabled={!canAdmin}>
+                  <option value="">Ecosystem</option>
+                  <option value="GOOGLE">GOOGLE</option>
+                  <option value="MICROSOFT">MICROSOFT</option>
+                  <option value="MIXED">MIXED</option>
+                </Select>
+                <Select name="budgetSensitivity" defaultValue={(school as any).budgetSensitivity ?? ""} disabled={!canAdmin}>
+                  <option value="">Budget sensitivity</option>
+                  <option value="LOW">LOW</option>
+                  <option value="MEDIUM">MEDIUM</option>
+                  <option value="HIGH">HIGH</option>
+                  <option value="PREMIUM">PREMIUM</option>
+                </Select>
+                <div className="rounded-md border border-[var(--border)] px-3 py-2 text-sm text-gray-700">
+                  Stage: <span className="font-medium text-gray-900">{school.transformationStage}</span>
                 </div>
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">Curriculum</label>
-                <Input
-                  name="curriculum"
-                  placeholder="e.g., National, IB, Cambridge, mixed"
-                  defaultValue={school.curriculum ?? ""}
-                  disabled={!canAdmin}
-                />
+                <label className="mb-1 block text-sm font-medium text-gray-700">Grade bands</label>
+                <Input name="gradeBandsText" defaultValue={gradeBands.join(", ")} placeholder="MIDDLE, HIGH" disabled={!canAdmin} />
               </div>
-
-              <div className="grid gap-3 md:grid-cols-3">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Estimated student count</label>
-                  <Input
-                    name="studentCount"
-                    type="number"
-                    min={1}
-                    placeholder="e.g., 600"
-                    defaultValue={school.studentCount ?? ""}
-                    disabled={!canAdmin}
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Device model</label>
-                  <Select name="deviceModel" defaultValue={school.deviceModel ?? ""} disabled={!canAdmin}>
-                    <option value="">—</option>
-                    <option value="ONE_TO_ONE">ONE_TO_ONE</option>
-                    <option value="SHARED">SHARED</option>
-                    <option value="LAB_ONLY">LAB_ONLY</option>
-                    <option value="BYOD">BYOD</option>
-                  </Select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Connectivity</label>
-                  <Select name="connectivity" defaultValue={school.connectivity ?? ""} disabled={!canAdmin}>
-                    <option value="">—</option>
-                    <option value="LOW">LOW</option>
-                    <option value="MEDIUM">MEDIUM</option>
-                    <option value="HIGH">HIGH</option>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid gap-3 md:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Ecosystem</label>
-                  <Select name="ecosystem" defaultValue={school.ecosystem ?? ""} disabled={!canAdmin}>
-                    <option value="">—</option>
-                    <option value="GOOGLE">GOOGLE</option>
-                    <option value="MICROSOFT">MICROSOFT</option>
-                    <option value="MIXED">MIXED</option>
-                  </Select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Grade bands</label>
-                  <div className="grid gap-2 rounded-md border border-[var(--border)] bg-white px-3 py-2">
-                    <label className="flex items-center gap-2 text-sm text-gray-800">
-                      <input
-                        type="checkbox"
-                        name="gradeBands"
-                        value="MIDDLE"
-                        defaultChecked={gradeBands.includes("MIDDLE")}
-                        disabled={!canAdmin}
-                      />
-                      Middle (Grades 7-9)
-                    </label>
-                    <label className="flex items-center gap-2 text-sm text-gray-800">
-                      <input
-                        type="checkbox"
-                        name="gradeBands"
-                        value="HIGH"
-                        defaultChecked={gradeBands.includes("HIGH")}
-                        disabled={!canAdmin}
-                      />
-                      High (Grades 10-12)
-                    </label>
-                  </div>
-                </div>
-              </div>
-
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700">Priority outcomes</label>
-                <div className="grid gap-2 rounded-md border border-[var(--border)] bg-white px-3 py-2 md:grid-cols-2">
-                  {[
-                    "Teacher AI readiness",
-                    "Student accountability",
-                    "Faster operations",
-                    "Project-based learning",
-                    "Higher scores",
-                    "Reduce teacher workload",
-                    "Improve student support"
-                  ].map((o) => (
-                    <label key={o} className="flex items-center gap-2 text-sm text-gray-800">
-                      <input
-                        type="checkbox"
-                        name="priorityOutcomes"
-                        value={o}
-                        defaultChecked={priorityOutcomes.includes(o)}
-                        disabled={!canAdmin}
-                      />
-                      {o}
-                    </label>
-                  ))}
-                </div>
+                <Textarea name="priorityOutcomesText" defaultValue={priorityOutcomes.join("\n")} disabled={!canAdmin} placeholder="One per line" />
               </div>
-
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">Constraints / non-negotiables</label>
-                <Textarea
-                  name="constraints"
-                  placeholder="What the school will not change (curriculum, assessments, devices, etc.)"
-                  defaultValue={school.constraints ?? ""}
-                  disabled={!canAdmin}
-                />
+                <label className="mb-1 block text-sm font-medium text-gray-700">Current tooling</label>
+                <Textarea name="currentToolingText" defaultValue={currentTooling.join("\n")} disabled={!canAdmin} placeholder="One per line" />
               </div>
-
-              {canAdmin && (
-                <div className="flex justify-end">
-                  <Button variant="primary" type="submit">
-                    Save
-                  </Button>
-                </div>
-              )}
+              <Textarea name="constraints" defaultValue={school.constraints ?? ""} disabled={!canAdmin} placeholder="Constraints" />
+              <Textarea name="nonNegotiables" defaultValue={(school as any).nonNegotiables ?? ""} disabled={!canAdmin} placeholder="Non-negotiables" />
+              <Textarea name="aiAdoptionGoal" defaultValue={(school as any).aiAdoptionGoal ?? ""} disabled={!canAdmin} placeholder="AI adoption goal" />
+              <Textarea name="individualizedLearningGoal" defaultValue={(school as any).individualizedLearningGoal ?? ""} disabled={!canAdmin} placeholder="Individualized learning goal" />
+              <Textarea name="projectBasedLearningGoal" defaultValue={(school as any).projectBasedLearningGoal ?? ""} disabled={!canAdmin} placeholder="Projects goal" />
+              <Textarea name="selGoal" defaultValue={(school as any).selGoal ?? ""} disabled={!canAdmin} placeholder="SEL goal" />
+              <Textarea name="school2Vision" defaultValue={(school as any).school2Vision ?? ""} disabled={!canAdmin} placeholder="School 2.0 vision" />
+              <Button variant="primary" type="submit" disabled={!canAdmin}>Save school profile</Button>
             </form>
           </CardContent>
         </Card>
 
-        {canAdmin && (
+        <div className="space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Invite a user</CardTitle>
-              <p className="mt-2 text-sm text-gray-600">
-                Creates an invite link. If email sending is not configured, the link will appear in a debug toast.
-              </p>
-            </CardHeader>
-            <CardContent>
-              <form className="grid gap-3" action={createInvite}>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Email</label>
-                  <Input name="email" type="email" required placeholder="person@school.id" />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Role</label>
-                  <Select name="role" defaultValue="STAFF">
-                    <option value="ADMIN">ADMIN</option>
-                    <option value="IT">IT</option>
-                    <option value="STAFF">STAFF</option>
-                    <option value="COACH">COACH</option>
-                    <option value="TEACHER">TEACHER</option>
-                  </Select>
-                </div>
-                <div className="flex justify-end">
-                  <Button variant="primary" type="submit">
-                    Create invite
-                  </Button>
-                </div>
+            <CardHeader><CardTitle>Invite users</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <form className="space-y-3" action={createInvite}>
+                <Input name="email" placeholder="name@school.id" disabled={!canAdmin} />
+                <Select name="role" defaultValue="STAFF" disabled={!canAdmin}>
+                  <option value="ADMIN">ADMIN</option>
+                  <option value="STAFF">STAFF</option>
+                  <option value="IT">IT</option>
+                  <option value="COACH">COACH</option>
+                  <option value="TEACHER">TEACHER</option>
+                </Select>
+                <Button variant="secondary" type="submit" disabled={!canAdmin}>Create invite</Button>
               </form>
-
-              {invites.length > 0 && (
-                <div className="mt-4 rounded-lg border border-[var(--border)] bg-gray-50 px-4 py-3">
-                  <div className="text-sm font-medium text-gray-800">Recent invites (pending)</div>
-                  <div className="mt-2 space-y-2 text-sm text-gray-700">
-                    {invites.map((i) => (
-                      <div key={i.id} className="flex items-center justify-between">
-                        <div className="min-w-0">
-                          <div className="truncate font-medium">{i.email}</div>
-                          <div className="text-xs text-gray-500">
-                            Role: {i.role} • Expires: {formatDateTime(i.expiresAt)}
-                          </div>
-                        </div>
-                        <Badge variant="neutral">Pending</Badge>
-                      </div>
-                    ))}
+              <div className="space-y-2 text-sm text-gray-600">
+                {invites.map((invite) => (
+                  <div key={invite.id} className="rounded-md border border-[var(--border)] px-3 py-2">
+                    <div className="font-medium text-gray-900">{invite.email}</div>
+                    <div>{invite.role} • expires {formatDateTime(new Date(invite.expiresAt))}</div>
                   </div>
-                </div>
-              )}
+                ))}
+                {!invites.length ? <div>No pending invites.</div> : null}
+              </div>
             </CardContent>
           </Card>
-        )}
+
+          <Card>
+            <CardHeader><CardTitle>Users</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              {users.map((user) => (
+                <div key={user.id} className="rounded-lg border border-[var(--border)] p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <div className="font-medium text-gray-900">{user.name}</div>
+                      <div className="text-sm text-gray-600">{user.email}</div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant={user.active ? "success" : "warning"}>{roleLabel(user.role)}</Badge>
+                      <form action={setUserRole}>
+                        <input type="hidden" name="userId" value={user.id} />
+                        <select name="role" defaultValue={user.role} className="rounded-md border border-[var(--border)] px-2 py-1 text-sm" disabled={!canAdmin}>
+                          <option value="ADMIN">ADMIN</option>
+                          <option value="STAFF">STAFF</option>
+                          <option value="IT">IT</option>
+                          <option value="COACH">COACH</option>
+                          <option value="TEACHER">TEACHER</option>
+                        </select>
+                        <Button className="ml-2" variant="ghost" type="submit" disabled={!canAdmin}>Save</Button>
+                      </form>
+                      <form action={setUserActive}>
+                        <input type="hidden" name="userId" value={user.id} />
+                        <input type="hidden" name="active" value={user.active ? "false" : "true"} />
+                        <Button variant="ghost" type="submit" disabled={!canAdmin}>{user.active ? "Deactivate" : "Activate"}</Button>
+                      </form>
+                      <form action={deleteUser}>
+                        <input type="hidden" name="userId" value={user.id} />
+                        <Button variant="danger" type="submit" disabled={!canAdmin}>Delete</Button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
       </div>
-
-      <Card className="mt-4">
-        <CardHeader>
-          <CardTitle>Users</CardTitle>
-          <p className="mt-2 text-sm text-gray-600">Deactivate accounts instead of deleting where possible.</p>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-auto rounded-lg border border-[var(--border)]">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-gray-600">
-                <tr>
-                  <th className="px-4 py-3 text-left font-medium">Name</th>
-                  <th className="px-4 py-3 text-left font-medium">Email</th>
-                  <th className="px-4 py-3 text-left font-medium">Role</th>
-                  <th className="px-4 py-3 text-left font-medium">Status</th>
-                  <th className="px-4 py-3 text-right font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((u) => (
-                  <tr key={u.id}>
-                    <td className="border-t border-[var(--border)] px-4 py-3 font-medium text-gray-900">{u.name}</td>
-                    <td className="border-t border-[var(--border)] px-4 py-3 text-gray-600">{u.email}</td>
-                    <td className="border-t border-[var(--border)] px-4 py-3">
-                      {canAdmin ? (
-                        <form action={setUserRole}>
-                          <input type="hidden" name="userId" value={u.id} />
-                          <Select name="role" defaultValue={u.role}>
-                            <option value="ADMIN">ADMIN</option>
-                            <option value="IT">IT</option>
-                            <option value="STAFF">STAFF</option>
-                            <option value="COACH">COACH</option>
-                            <option value="TEACHER">TEACHER</option>
-                          </Select>
-                          <div className="mt-2"><Button type="submit">Save</Button></div>
-                        </form>
-                      ) : (
-                        <Badge variant="neutral">{u.role}</Badge>
-                      )}
-                    </td>
-                    <td className="border-t border-[var(--border)] px-4 py-3">
-                      {u.active ? <Badge variant="success">Active</Badge> : <Badge variant="danger">Disabled</Badge>}
-                    </td>
-                    <td className="border-t border-[var(--border)] px-4 py-3 text-right">
-                      {canAdmin && (
-                        <div className="flex justify-end gap-2">
-                          <form action={setUserActive}>
-                            <input type="hidden" name="userId" value={u.id} />
-                            <input type="hidden" name="active" value={u.active ? "false" : "true"} />
-                            <Button type="submit">{u.active ? "Deactivate" : "Activate"}</Button>
-                          </form>
-
-                          <ConfirmActionForm
-                            action={deleteUser}
-                            confirmMessage={`Delete user ${u.email}? This is permanent.`}
-                          >
-                            <input type="hidden" name="userId" value={u.id} />
-                            <Button variant="danger" type="submit">
-                              Delete
-                            </Button>
-                          </ConfirmActionForm>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-
-                {users.length === 0 && (
-                  <tr>
-                    <td className="border-t border-[var(--border)] px-4 py-3 text-center text-gray-500" colSpan={5}>
-                      No users yet.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {canAdmin && <RolePermissionsCard />}
-
-      {canAdmin && (
-        <Card className="mt-4">
-          <CardHeader>
-            <CardTitle>Audit log</CardTitle>
-            <p className="mt-2 text-sm text-gray-600">Latest 30 events for this school.</p>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-auto rounded-lg border border-[var(--border)]">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 text-gray-600">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-medium">When</th>
-                    <th className="px-4 py-3 text-left font-medium">Actor</th>
-                    <th className="px-4 py-3 text-left font-medium">Action</th>
-                    <th className="px-4 py-3 text-left font-medium">Entity</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {auditLogs.map((a) => (
-                    <tr key={a.id}>
-                      <td className="border-t border-[var(--border)] px-4 py-3 text-gray-600">{formatDateTime(a.createdAt)}</td>
-                      <td className="border-t border-[var(--border)] px-4 py-3 text-gray-700">{a.actor?.name ?? "System"}</td>
-                      <td className="border-t border-[var(--border)] px-4 py-3 font-mono text-xs text-gray-800">{a.action}</td>
-                      <td className="border-t border-[var(--border)] px-4 py-3 text-gray-700">
-                        {a.entityType}
-                        {a.entityId ? <span className="text-gray-400"> #{a.entityId.slice(0, 6)}</span> : null}
-                      </td>
-                    </tr>
-                  ))}
-                  {auditLogs.length === 0 && (
-                    <tr>
-                      <td className="border-t border-[var(--border)] px-4 py-3 text-center text-gray-500" colSpan={4}>
-                        No audit events yet.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </PageShell>
   );
 }

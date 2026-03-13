@@ -2,12 +2,14 @@
 
 import { prisma } from "@/lib/prisma";
 import { auditLog } from "@/lib/audit";
-import { notifyUser, notifySchoolUsers } from "@/lib/notify";
+import { notifyUser } from "@/lib/notify";
 import { requireActiveSchool } from "@/lib/tenant";
 import { requireRole } from "@/lib/rbac";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+
+const db = prisma as any;
 
 const createSchema = z.object({
   type: z.string().min(1),
@@ -47,11 +49,10 @@ export async function createRequest(formData: FormData) {
     metadata: { type: req.type }
   });
 
-  // Notify Admin/IT
   const admins = await prisma.user.findMany({ where: { schoolId, active: true, role: { in: ["ADMIN", "IT"] } } });
-  for (const u of admins) {
+  for (const user of admins) {
     await notifyUser({
-      userId: u.id,
+      userId: user.id,
       schoolId,
       type: "ACTION",
       title: "New request submitted",
@@ -73,7 +74,6 @@ export async function updateRequestStatus(requestId: string, formData: FormData)
   if (!req) redirect("/requests?error=Request not found");
 
   await prisma.request.update({ where: { id: req.id }, data: { status } });
-
   await prisma.requestEvent.create({
     data: { requestId: req.id, actorId: session.user.id, type: "status.changed", message: `Status changed to ${status}.` }
   });
@@ -117,12 +117,7 @@ export async function assignRequest(requestId: string, formData: FormData) {
   });
 
   await prisma.requestEvent.create({
-    data: {
-      requestId: req.id,
-      actorId: session.user.id,
-      type: "request.assigned",
-      message: assignedToId ? "Assigned." : "Unassigned."
-    }
+    data: { requestId: req.id, actorId: session.user.id, type: "request.assigned", message: assignedToId ? "Assigned." : "Unassigned." }
   });
 
   await auditLog({
@@ -159,13 +154,8 @@ export async function addRequestComment(requestId: string, formData: FormData) {
   const req = await prisma.request.findFirst({ where: { id: requestId, schoolId } });
   if (!req) redirect("/requests?error=Request not found");
 
-  const comment = await prisma.requestComment.create({
-    data: { requestId: req.id, authorId: session.user.id, body }
-  });
-
-  await prisma.requestEvent.create({
-    data: { requestId: req.id, actorId: session.user.id, type: "comment.added", message: "Comment added." }
-  });
+  const comment = await prisma.requestComment.create({ data: { requestId: req.id, authorId: session.user.id, body } });
+  await prisma.requestEvent.create({ data: { requestId: req.id, actorId: session.user.id, type: "comment.added", message: "Comment added." } });
 
   await auditLog({
     schoolId,
@@ -202,15 +192,11 @@ export async function decideRequest(requestId: string, formData: FormData) {
   });
   if (!req) redirect("/requests?error=Request not found");
 
-  if (!["TOOL_ENABLE", "STUDENT_TOOL_ACCESS"].includes(req.kind)) {
-    redirect(`/requests/${req.id}?error=This request does not support approval`);
-  }
-
   if (decision === "APPROVED") {
     if (req.kind === "TOOL_ENABLE" && req.toolId != null && req.desiredSchoolToolEnabled != null) {
-      const st = await prisma.schoolTool.findFirst({ where: { schoolId, toolId: req.toolId } });
-      if (st) {
-        await prisma.schoolTool.update({ where: { id: st.id }, data: { enabled: req.desiredSchoolToolEnabled } });
+      const schoolTool = await prisma.schoolTool.findFirst({ where: { schoolId, toolId: req.toolId } });
+      if (schoolTool) {
+        await prisma.schoolTool.update({ where: { id: schoolTool.id }, data: { enabled: req.desiredSchoolToolEnabled } });
       }
     }
 
@@ -221,13 +207,42 @@ export async function decideRequest(requestId: string, formData: FormData) {
         create: { studentId: req.studentId, toolId: req.toolId, enabled: req.desiredStudentToolEnabled }
       });
     }
+
+    if (req.kind === "STACK_BUNDLE" && req.bundleKey) {
+      const bundle = await prisma.stackBundle.findUnique({ where: { key: req.bundleKey } });
+      if (bundle) {
+        await db.schoolBundleAdoption.upsert({
+          where: { schoolId_bundleId: { schoolId, bundleId: bundle.id } },
+          update: { status: "ACTIVE", ownerId: session.user.id },
+          create: { schoolId, bundleId: bundle.id, status: "ACTIVE", ownerId: session.user.id }
+        });
+      }
+    }
+
+    if (req.packKey) {
+      const pack = await db.transformationPack.findUnique({ where: { key: req.packKey } });
+      if (pack) {
+        await db.schoolPackAdoption.upsert({
+          where: { schoolId_packId: { schoolId, packId: pack.id } },
+          update: { status: "ACTIVE", ownerId: session.user.id },
+          create: { schoolId, packId: pack.id, status: "ACTIVE", ownerId: session.user.id }
+        });
+      }
+    }
+  } else {
+    if (req.kind === "STACK_BUNDLE" && req.bundleKey) {
+      const bundle = await prisma.stackBundle.findUnique({ where: { key: req.bundleKey } });
+      if (bundle) {
+        await db.schoolBundleAdoption.upsert({
+          where: { schoolId_bundleId: { schoolId, bundleId: bundle.id } },
+          update: { status: "DEFERRED", ownerId: session.user.id },
+          create: { schoolId, bundleId: bundle.id, status: "DEFERRED", ownerId: session.user.id }
+        });
+      }
+    }
   }
 
-  await prisma.request.update({
-    where: { id: req.id },
-    data: { decision, status: "COMPLETED" }
-  });
-
+  await prisma.request.update({ where: { id: req.id }, data: { decision, status: "COMPLETED" } });
   await prisma.requestEvent.create({
     data: {
       requestId: req.id,
@@ -243,10 +258,9 @@ export async function decideRequest(requestId: string, formData: FormData) {
     action: "request.decision",
     entityType: "Request",
     entityId: req.id,
-    metadata: { decision, kind: req.kind }
+    metadata: { decision, kind: req.kind, bundleKey: req.bundleKey, packKey: req.packKey }
   });
 
-  // Notify submitter
   if (req.submittedById) {
     await notifyUser({
       userId: req.submittedById,
@@ -260,6 +274,8 @@ export async function decideRequest(requestId: string, formData: FormData) {
 
   revalidatePath("/requests");
   revalidatePath("/tools");
+  revalidatePath("/stacks");
+  revalidatePath("/packs");
   revalidatePath(`/students/${req.studentId ?? ""}`);
   revalidatePath(`/requests/${req.id}`);
   redirect(`/requests/${req.id}?success=Decision recorded`);
@@ -268,12 +284,10 @@ export async function decideRequest(requestId: string, formData: FormData) {
 export async function deleteRequest(requestId: string) {
   const session = await requireRole(["ADMIN", "SUPER_ADMIN"]);
   const { schoolId } = await requireActiveSchool();
-
   const req = await prisma.request.findFirst({ where: { id: requestId, schoolId } });
   if (!req) redirect("/requests?error=Request not found");
 
   await prisma.request.delete({ where: { id: req.id } });
-
   await auditLog({
     schoolId,
     actorId: session.user.id,

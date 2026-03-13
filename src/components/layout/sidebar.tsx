@@ -7,30 +7,34 @@ import {
   Building2,
   TrendingUp,
   LayoutDashboard,
-  Users,
+  ShieldCheck,
+  Boxes,
   Wrench,
   Layers,
-  ClipboardList,
   GraduationCap,
-  BookOpen,
   Megaphone,
-  ShieldCheck,
+  ClipboardList,
+  BookOpen,
   LifeBuoy,
-  Settings
+  Settings,
+  LineChart,
+  Handshake
 } from "lucide-react";
 
 const nav = [
-  { href: "/hq", label: "HQ", icon: Building2 },
-  { href: "/transformation", label: "Transformation", icon: TrendingUp },
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/students", label: "Students", icon: Users },
-  { href: "/tools", label: "Tools", icon: Wrench },
-  { href: "/stacks", label: "Stacks", icon: Layers },
-  { href: "/requests", label: "Requests", icon: ClipboardList },
+  { href: "/hq", label: "HQ Command Center", icon: Building2 },
+  { href: "/transformation", label: "Transformation Copilot", icon: TrendingUp },
+  { href: "/transformation/report", label: "Executive Report", icon: LineChart },
+  { href: "/dashboard", label: "Readiness & ROI", icon: LayoutDashboard },
+  { href: "/governance", label: "Governance & Support", icon: ShieldCheck },
+  { href: "/packs", label: "Transformation Packs", icon: Boxes },
+  { href: "/tools", label: "Tool Recommendations", icon: Wrench },
+  { href: "/stacks", label: "Bundles", icon: Layers },
   { href: "/training", label: "Training Hub", icon: GraduationCap },
+  { href: "/growth", label: "Growth Assets", icon: Megaphone },
+  { href: "/partners", label: "Partner Ops", icon: Handshake },
+  { href: "/requests", label: "Requests", icon: ClipboardList },
   { href: "/knowledge", label: "Knowledge Base", icon: BookOpen },
-  { href: "/updates", label: "Updates", icon: Megaphone },
-  { href: "/quality", label: "Implementation & Quality", icon: ShieldCheck },
   { href: "/support", label: "Support", icon: LifeBuoy },
   { href: "/settings", label: "Settings", icon: Settings }
 ];
@@ -39,12 +43,12 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed left-0 top-0 hidden h-screen w-[240px] border-r border-[var(--border)] bg-white md:block">
-      <div className="flex h-16 flex-col justify-center px-5">
-        <div className="text-base font-semibold text-gray-900">Centum</div>
-        <div className="text-xs text-gray-500">Partner Portal</div>
+    <aside className="fixed left-0 top-0 hidden h-screen w-[272px] border-r border-[var(--border)] bg-white md:block">
+      <div className="border-b border-[var(--border)] px-5 py-5">
+        <div className="text-lg font-semibold text-gray-900">Centum Stack</div>
+        <div className="text-xs uppercase tracking-[0.22em] text-gray-500">School 2.0 Platform</div>
       </div>
-      <nav className="px-3">
+      <nav className="h-[calc(100vh-120px)] overflow-y-auto px-3 py-4">
         <ul className="space-y-1">
           {nav.map((item) => {
             const active = pathname === item.href || pathname.startsWith(item.href + "/");
@@ -67,7 +71,7 @@ export function Sidebar() {
         </ul>
       </nav>
       <div className="absolute bottom-0 left-0 w-full border-t border-[var(--border)] p-4 text-xs text-gray-500">
-        Centum Partner Portal
+        Leadership-first transition engine for existing schools.
       </div>
     </aside>
   );

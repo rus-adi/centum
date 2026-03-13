@@ -11,11 +11,12 @@ export function LoginClient({ error }: { error?: string | null }) {
   const [loading, setLoading] = useState(false);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Centum Partner Portal</CardTitle>
-          <p className="mt-2 text-sm text-gray-600">Sign in to continue.</p>
+          <div className="text-xs uppercase tracking-[0.22em] text-gray-500">School 2.0 Platform</div>
+          <CardTitle>Centum Stack</CardTitle>
+          <p className="mt-2 text-sm text-gray-600">Sign in to continue your transformation work.</p>
         </CardHeader>
         <CardContent>
           {err && (

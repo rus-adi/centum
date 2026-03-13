@@ -8,6 +8,8 @@ import { requireRole } from "@/lib/rbac";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
+const db = prisma as any;
+
 export async function directToggleSchoolTool(formData: FormData) {
   const session = await requireRole(["ADMIN", "IT", "SUPER_ADMIN"]);
   const { schoolId } = await requireActiveSchool();
@@ -19,23 +21,17 @@ export async function directToggleSchoolTool(formData: FormData) {
   const st = await prisma.schoolTool.findFirst({ where: { schoolId, toolId }, include: { tool: true } });
   if (!st) redirect("/tools?error=Tool not found");
 
-  // Investor MVP: tool→training gating. If enabling, require the current user to have completed
-  // all prerequisite training modules (current versions).
   if (enabled) {
-    const reqs = await prisma.toolRequirement.findMany({
-      where: { toolId },
-      include: { module: true }
-    });
-
+    const reqs = await prisma.toolRequirement.findMany({ where: { toolId }, include: { module: true } });
     if (reqs.length > 0) {
       const completions = await prisma.trainingCompletion.findMany({
-        where: { userId: session.user.id, moduleId: { in: reqs.map((r) => r.moduleId) } }
+        where: { userId: session.user.id, moduleId: { in: reqs.map((req) => req.moduleId) } }
       });
-      const completionSet = new Set(completions.map((c) => `${c.moduleId}:${c.version}`));
-      const missing = reqs.filter((r) => !completionSet.has(`${r.moduleId}:${r.module.currentVersion}`));
+      const completionSet = new Set(completions.map((completion) => `${completion.moduleId}:${completion.version}`));
+      const missing = reqs.filter((req) => !completionSet.has(`${req.moduleId}:${req.module.currentVersion}`));
 
       if (missing.length > 0) {
-        const names = missing.map((m) => m.module.title).join(", ");
+        const names = missing.map((item) => item.module.title).join(", ");
         redirect(`/tools?error=${encodeURIComponent(`Training required before enabling: ${names}`)}`);
       }
     }
@@ -43,7 +39,7 @@ export async function directToggleSchoolTool(formData: FormData) {
 
   await prisma.schoolTool.update({
     where: { id: st.id },
-    data: { enabled }
+    data: { enabled, recommended: enabled ? st.recommended : st.recommended }
   });
 
   await auditLog({
@@ -88,7 +84,8 @@ export async function requestSchoolToolChange(formData: FormData) {
       decision: "PENDING",
       submittedById: session.user.id,
       toolId,
-      desiredSchoolToolEnabled: desired
+      desiredSchoolToolEnabled: desired,
+      requestContext: { requestedFrom: "tool-catalog-v2", visibility: tool.visibility }
     }
   });
 
@@ -112,4 +109,32 @@ export async function requestSchoolToolChange(formData: FormData) {
 
   revalidatePath("/requests");
   redirect(`/requests/${req.id}?success=Request submitted`);
+}
+
+export async function setToolRecommendationStatus(formData: FormData) {
+  const session = await requireRole(["ADMIN", "IT", "SUPER_ADMIN"]);
+  const { schoolId } = await requireActiveSchool();
+  const toolId = String(formData.get("toolId") ?? "");
+  const reason = String(formData.get("reason") ?? "").trim() || "Recommended by School 2.0 review.";
+  const status = String(formData.get("status") ?? "PENDING").trim() || "PENDING";
+
+  if (!toolId) redirect("/tools?error=Missing tool");
+
+  await db.toolRecommendation.upsert({
+    where: { schoolId_toolId: { schoolId, toolId } },
+    update: { reason, status, recommendedById: session.user.id },
+    create: { schoolId, toolId, reason, status, recommendedById: session.user.id }
+  });
+
+  await auditLog({
+    schoolId,
+    actorId: session.user.id,
+    action: "tool.recommendation.update",
+    entityType: "ToolRecommendation",
+    entityId: toolId,
+    metadata: { status }
+  });
+
+  revalidatePath("/tools");
+  redirect("/tools?success=Recommendation updated");
 }

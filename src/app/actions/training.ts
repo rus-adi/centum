@@ -15,11 +15,7 @@ export async function completeNextLesson(moduleId: string) {
   if (!trainingModule) redirect("/training?error=Module not found");
 
   const version = trainingModule.currentVersion;
-
-  const existing = await prisma.trainingProgress.findFirst({
-    where: { userId: session.user.id, moduleId: trainingModule.id, version }
-  });
-
+  const existing = await prisma.trainingProgress.findFirst({ where: { userId: session.user.id, moduleId: trainingModule.id, version } });
   const lessonsCompleted = existing ? existing.lessonsCompleted : 0;
   const next = Math.min(trainingModule.totalLessons, lessonsCompleted + 1);
 
@@ -43,11 +39,11 @@ export async function completeNextLesson(moduleId: string) {
     action: "training.progress",
     entityType: "TrainingModule",
     entityId: trainingModule.id,
-    metadata: { version, lessonsCompleted: next }
+    metadata: { version, lessonsCompleted: next, title: trainingModule.title }
   });
 
   revalidatePath("/training");
-  redirect(`/training?success=${encodeURIComponent("Progress saved")}`);
+  redirect(`/training?success=${encodeURIComponent(next >= trainingModule.totalLessons ? "Module completed" : "Progress saved")}`);
 }
 
 export async function resetTrainingProgress(moduleId: string) {
@@ -58,7 +54,6 @@ export async function resetTrainingProgress(moduleId: string) {
   if (!trainingModule) redirect("/training?error=Module not found");
 
   const version = trainingModule.currentVersion;
-
   await prisma.trainingProgress.deleteMany({ where: { userId: session.user.id, moduleId: trainingModule.id, version } });
 
   await auditLog({

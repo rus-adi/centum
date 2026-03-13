@@ -1,80 +1,64 @@
 import { PageShell } from "@/components/layout/page-shell";
-import { prisma } from "@/lib/prisma";
-import { requireActiveSchool } from "@/lib/tenant";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { requestStackBundle } from "@/app/actions/stacks";
+import { prisma } from "@/lib/prisma";
+import { requireActiveSchool } from "@/lib/tenant";
+import { requestStackBundle, setBundleStatus } from "@/app/actions/stacks";
+
+const db = prisma as any;
 
 export default async function StacksPage() {
-  await requireActiveSchool();
-
-  const [bundles, tools] = await Promise.all([
-    prisma.stackBundle.findMany({ orderBy: { category: "asc" } }),
-    prisma.tool.findMany({ orderBy: { name: "asc" } })
+  const { schoolId } = await requireActiveSchool();
+  const [bundles, adoptions] = await Promise.all([
+    db.stackBundle.findMany({ orderBy: { name: "asc" } }),
+    db.schoolBundleAdoption.findMany({ where: { schoolId } })
   ]);
 
-  const toolMap = new Map(tools.map((t) => [t.key, t.name]));
+  const adoptionMap = new Map(adoptions.map((adoption: any) => [adoption.bundleId, adoption]));
 
   return (
-    <PageShell title="Stacks">
-      <div className="grid gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Approved stack bundles</CardTitle>
-            <p className="mt-2 text-sm text-gray-600">
-              Stacks are curated tool bundles that Centum can recommend and deploy quickly.
-            </p>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-2">
-              {bundles.map((b) => {
-                const keys = Array.isArray(b.toolKeys) ? (b.toolKeys as any[]) : [];
-                return (
-                  <Card key={b.id}>
-                    <CardHeader>
-                      <CardTitle>{b.name}</CardTitle>
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
-                        <Badge variant="info">{b.category}</Badge>
-                        <Badge variant="neutral">{keys.length} tools</Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-sm text-gray-700">{b.description}</div>
-
-                      <div className="mt-3">
-                        <div className="text-xs font-medium text-gray-500">Includes</div>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {keys.map((k) => (
-                            <Badge key={k} variant="neutral">
-                              {toolMap.get(String(k)) ?? String(k)}
-                            </Badge>
-                          ))}
-                          {keys.length === 0 && <div className="text-xs text-gray-500">No tools listed.</div>}
-                        </div>
-                      </div>
-
-                      <div className="mt-4 flex justify-end">
-                        <form action={requestStackBundle}>
-                          <input type="hidden" name="bundleKey" value={b.key} />
-                          <Button type="submit" variant="primary">
-                            Request this stack
-                          </Button>
-                        </form>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-
-              {bundles.length === 0 && (
-                <div className="rounded-lg border border-dashed border-[var(--border)] p-6 text-sm text-gray-600">
-                  No bundles yet. Seed data should create demo bundles.
+    <PageShell
+      title="Bundles"
+      description="Structured bundle adoption so schools see a calm, curated path instead of the full internal tool registry."
+    >
+      <div className="grid gap-4 md:grid-cols-2">
+        {bundles.map((bundle: any) => {
+          const adoption = adoptionMap.get(bundle.id);
+          const toolKeys = Array.isArray(bundle.toolKeys) ? bundle.toolKeys : [];
+          return (
+            <Card key={bundle.id}>
+              <CardHeader>
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <CardTitle>{bundle.name}</CardTitle>
+                    <div className="mt-2 text-sm text-gray-600">{bundle.description}</div>
+                  </div>
+                  <Badge variant={adoption?.status === "ACTIVE" ? "success" : adoption?.status === "DEFERRED" ? "warning" : "info"}>
+                    {adoption?.status ?? "RECOMMENDED"}
+                  </Badge>
                 </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {bundle.overview ? <div className="text-sm text-gray-600">{bundle.overview}</div> : null}
+                <div className="flex flex-wrap gap-2">
+                  {toolKeys.map((key: string) => <Badge key={key}>{key}</Badge>)}
+                </div>
+                <div className="flex gap-2">
+                  <form action={requestStackBundle}>
+                    <input type="hidden" name="bundleKey" value={bundle.key} />
+                    <Button variant="primary" type="submit">Request bundle</Button>
+                  </form>
+                  <form action={setBundleStatus}>
+                    <input type="hidden" name="bundleId" value={bundle.id} />
+                    <input type="hidden" name="status" value={adoption?.status === "ACTIVE" ? "DEFERRED" : "ACTIVE"} />
+                    <Button variant="secondary" type="submit">{adoption?.status === "ACTIVE" ? "Defer" : "Activate"}</Button>
+                  </form>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     </PageShell>
   );

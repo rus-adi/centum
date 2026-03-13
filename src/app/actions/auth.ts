@@ -33,22 +33,13 @@ export async function createInvite(formData: FormData) {
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
   const invite = await prisma.inviteToken.create({
-    data: {
-      schoolId,
-      email,
-      role,
-      tokenHash,
-      invitedById: actorId,
-      expiresAt
-    }
+    data: { schoolId, email, role, tokenHash, invitedById: actorId, expiresAt }
   });
 
   const link = `${appUrl()}/invite?token=${raw}`;
-
-  // Email if configured; otherwise create a notification for the inviter and show debug link
-  const subject = "You're invited to Centum Partner Portal";
+  const subject = "You're invited to Centum Stack";
   const html = `
-    <p>You have been invited to Centum Partner Portal.</p>
+    <p>You have been invited to Centum Stack.</p>
     <p><a href="${link}">Accept invite</a></p>
     <p>This link expires in 7 days.</p>
   `;
@@ -84,12 +75,10 @@ export async function acceptInvite(rawToken: string, formData: FormData) {
     where: { tokenHash, acceptedAt: null, expiresAt: { gt: new Date() } },
     include: { school: true }
   });
-
   if (!invite) redirect("/invite?error=invalid_or_expired");
 
   const name = String(formData.get("name") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-
   if (!name || password.length < 6) redirect(`/invite?token=${encodeURIComponent(rawToken)}&error=invalid_form`);
 
   const existing = await prisma.user.findUnique({ where: { email: invite.email } });
@@ -104,10 +93,7 @@ export async function acceptInvite(rawToken: string, formData: FormData) {
         data: { email: invite.email, name, password: hash, role: invite.role, schoolId: invite.schoolId, active: true }
       });
 
-  await prisma.inviteToken.update({
-    where: { id: invite.id },
-    data: { acceptedAt: new Date() }
-  });
+  await prisma.inviteToken.update({ where: { id: invite.id }, data: { acceptedAt: new Date() } });
 
   await auditLog({
     schoolId: invite.schoolId,
@@ -126,21 +112,16 @@ export async function requestPasswordReset(formData: FormData) {
   if (!email) redirect("/forgot?error=Email is required");
 
   const user = await prisma.user.findUnique({ where: { email } });
-
-  // Always return success to prevent user enumeration
   if (!user) redirect("/forgot?success=If that email exists, a reset link has been sent.");
 
   const raw = randomToken(24);
   const tokenHash = sha256(raw);
   const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
 
-  await prisma.passwordResetToken.create({
-    data: { userId: user.id, tokenHash, expiresAt }
-  });
+  await prisma.passwordResetToken.create({ data: { userId: user.id, tokenHash, expiresAt } });
 
   const link = `${appUrl()}/reset?token=${raw}`;
-
-  const subject = "Reset your Centum Partner Portal password";
+  const subject = "Reset your Centum Stack password";
   const html = `
     <p>Reset your password using the link below:</p>
     <p><a href="${link}">Reset password</a></p>
@@ -157,28 +138,18 @@ export async function requestPasswordReset(formData: FormData) {
 
 export async function resetPassword(rawToken: string, formData: FormData) {
   const tokenHash = sha256(rawToken);
-
   const token = await prisma.passwordResetToken.findFirst({
     where: { tokenHash, usedAt: null, expiresAt: { gt: new Date() } },
     include: { user: true }
   });
-
   if (!token) redirect("/reset?error=invalid_or_expired");
 
   const password = String(formData.get("password") ?? "");
   if (password.length < 6) redirect(`/reset?token=${encodeURIComponent(rawToken)}&error=weak_password`);
 
   const hash = await bcrypt.hash(password, 10);
-
-  await prisma.user.update({
-    where: { id: token.userId },
-    data: { password: hash, active: true }
-  });
-
-  await prisma.passwordResetToken.update({
-    where: { id: token.id },
-    data: { usedAt: new Date() }
-  });
+  await prisma.user.update({ where: { id: token.userId }, data: { password: hash, active: true } });
+  await prisma.passwordResetToken.update({ where: { id: token.id }, data: { usedAt: new Date() } });
 
   redirect("/login?success=Password updated. Please sign in.");
 }
