@@ -15,7 +15,7 @@ model School {
   region                      String?
   timezone                    String                  @default("Asia/Jakarta")
   createdAt                   DateTime                @default(now())
-  updatedAt                   DateTime                @updatedAt
+  updatedAt                   DateTime                @default(now()) @updatedAt
   type                        SchoolType?
   curriculum                  String?
   curriculumNotes             String?
@@ -45,6 +45,7 @@ model School {
   attachments                 FileAttachment[]
   bundleAdoptions             SchoolBundleAdoption[]
   copilotRuns                 CopilotRun[]
+  copilotRecommendations      CopilotRecommendation[]
   gates                       ImplementationGate[]
   governanceDocuments         GovernanceDocument[]
   governanceQueries           GovernanceQuery[]
@@ -109,7 +110,7 @@ model StackBundle {
   toolKeys          Json?
   recommendedRoles  Json?
   createdAt         DateTime               @default(now())
-  updatedAt         DateTime               @updatedAt
+  updatedAt         DateTime               @default(now()) @updatedAt
   bundleAdoptions   SchoolBundleAdoption[]
 
   @@index([category])
@@ -326,7 +327,7 @@ model Tool {
   deviceRequirements       String?
   connectivityRequirement  Connectivity?
   createdAt                DateTime              @default(now())
-  updatedAt                DateTime              @updatedAt
+  updatedAt                DateTime              @default(now()) @updatedAt
   licenses                 License[]
   requests                 Request[]
   schoolTools              SchoolTool[]

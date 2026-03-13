@@ -22,7 +22,7 @@ export default async function NotificationsPage() {
     take: 50
   });
 
-  const unread = notes.filter((n) => !n.readAt).length;
+  const unread = notes.filter((n: any) => !n.readAt).length;
 
   return (
     <PageShell title="Notifications">
@@ -38,7 +38,7 @@ export default async function NotificationsPage() {
       </div>
 
       <div className="mt-4 space-y-3">
-        {notes.map((n) => (
+        {notes.map((n: any) => (
           <Card key={n.id} className={n.readAt ? "" : "border-blue-200"}>
             <CardHeader>
               <CardTitle className="flex items-center justify-between gap-3">

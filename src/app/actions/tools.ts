@@ -25,13 +25,13 @@ export async function directToggleSchoolTool(formData: FormData) {
     const reqs = await prisma.toolRequirement.findMany({ where: { toolId }, include: { module: true } });
     if (reqs.length > 0) {
       const completions = await prisma.trainingCompletion.findMany({
-        where: { userId: session.user.id, moduleId: { in: reqs.map((req) => req.moduleId) } }
+        where: { userId: session.user.id, moduleId: { in: reqs.map((req: any) => req.moduleId) } }
       });
-      const completionSet = new Set(completions.map((completion) => `${completion.moduleId}:${completion.version}`));
-      const missing = reqs.filter((req) => !completionSet.has(`${req.moduleId}:${req.module.currentVersion}`));
+      const completionSet = new Set(completions.map((completion: any) => `${completion.moduleId}:${completion.version}`));
+      const missing = reqs.filter((req: any) => !completionSet.has(`${req.moduleId}:${req.module.currentVersion}`));
 
       if (missing.length > 0) {
-        const names = missing.map((item) => item.module.title).join(", ");
+        const names = missing.map((item: any) => item.module.title).join(", ");
         redirect(`/tools?error=${encodeURIComponent(`Training required before enabling: ${names}`)}`);
       }
     }

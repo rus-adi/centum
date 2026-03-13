@@ -16,7 +16,7 @@ export default async function PacksPage() {
     db.schoolPackAdoption.findMany({ where: { schoolId } })
   ]);
 
-  const adoptionMap = new Map(adoptions.map((adoption: any) => [adoption.packId, adoption]));
+  const adoptionMap = new Map<string, any>(adoptions.map((adoption: any) => [adoption.packId, adoption]));
 
   return (
     <PageShell
