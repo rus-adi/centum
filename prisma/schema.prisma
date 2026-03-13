@@ -45,6 +45,7 @@ model School {
   attachments                 FileAttachment[]
   bundleAdoptions             SchoolBundleAdoption[]
   copilotRuns                 CopilotRun[]
+  copilotRecommendations      CopilotRecommendation[]
   gates                       ImplementationGate[]
   governanceDocuments         GovernanceDocument[]
   governanceQueries           GovernanceQuery[]

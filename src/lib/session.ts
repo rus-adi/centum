@@ -2,7 +2,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import type { UserRole } from "@prisma/client";
 
 export async function requireSession() {
   const session = await getServerSession(authOptions);

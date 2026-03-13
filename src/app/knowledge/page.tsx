@@ -32,10 +32,10 @@ export default async function KnowledgeBasePage({
     prisma.knowledgeArticle.groupBy({ by: ["category"], where: { published: true } })
   ]);
 
-  const catList = categories
-    .map((c) => c.category)
-    .filter(Boolean)
-    .sort((a, b) => a.localeCompare(b));
+  const catList: string[] = categories
+    .map((c: { category: string | null }) => c.category)
+    .filter((value: string | null): value is string => Boolean(value))
+    .sort((a: string, b: string) => a.localeCompare(b));
 
   return (
     <PageShell title="Knowledge Base">
@@ -79,7 +79,7 @@ export default async function KnowledgeBasePage({
           </form>
 
           <div className="mt-4 grid gap-3">
-            {articles.map((a) => (
+            {articles.map((a: any) => (
               <Link
                 key={a.id}
                 href={`/knowledge/${a.slug}`}
