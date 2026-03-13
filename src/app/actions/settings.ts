@@ -7,7 +7,6 @@ import { requireRole } from "@/lib/rbac";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { Prisma } from "@prisma/client";
 
 const schoolSchema = z.object({
   name: z.string().min(1),
@@ -86,9 +85,7 @@ export async function updateSchool(formData: FormData) {
     school2Vision: emptyToNull(String(formData.get("school2Vision") ?? ""))
   });
 
-  const updated = await prisma.school.update({
-    where: { id: schoolId },
-    data: {
+  const updateData: any = {
       name: data.name,
       city: data.city,
       region: data.region ?? null,
@@ -111,10 +108,14 @@ export async function updateSchool(formData: FormData) {
       projectBasedLearningGoal: data.projectBasedLearningGoal ?? null,
       selGoal: data.selGoal ?? null,
       school2Vision: data.school2Vision ?? null,
-      gradeBands: gradeBands.length ? gradeBands : Prisma.DbNull,
-      priorityOutcomes: priorityOutcomes.length ? priorityOutcomes : Prisma.DbNull,
-      currentTooling: currentTooling.length ? currentTooling : Prisma.DbNull
-    }
+      gradeBands: gradeBands.length ? gradeBands : null,
+      priorityOutcomes: priorityOutcomes.length ? priorityOutcomes : null,
+      currentTooling: currentTooling.length ? currentTooling : null
+  };
+
+  const updated = await prisma.school.update({
+    where: { id: schoolId },
+    data: updateData
   });
 
   await auditLog({
