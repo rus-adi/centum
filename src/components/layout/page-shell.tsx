@@ -27,7 +27,7 @@ export async function PageShell({
       <MobileSidebar toggleId={navToggleId} role={session.user.role} />
       <main className="md:ml-[288px]">
         <Topbar title={title} navToggleId={navToggleId} />
-        <div className="mx-auto max-w-6xl px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+        <div className="mx-auto max-w-[1500px] px-4 py-5 sm:px-5 sm:py-6 lg:px-6 lg:py-8 2xl:px-8">
           <Suspense fallback={null}>
             <QueryToast />
           </Suspense>
