@@ -17,7 +17,7 @@ export async function Topbar({
   });
 
   return (
-    <header className="sticky top-0 z-20 border-b border-[var(--border)] bg-white/90 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-white/92 shadow-[0_8px_24px_rgba(15,23,42,0.06)] backdrop-blur-xl">
       <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6 lg:px-8">
         <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr),auto] xl:items-center">
           <div className="grid min-w-0 grid-cols-[auto,minmax(0,1fr),auto] items-start gap-3 xl:flex xl:items-center">

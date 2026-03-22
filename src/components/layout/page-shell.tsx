@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { MobileSidebar } from "@/components/layout/mobile-sidebar";
+import { ScrollFloatingButton } from "@/components/layout/scroll-floating-button";
 import { Topbar } from "@/components/layout/topbar";
 import { QueryToast } from "@/components/ui/query-toast";
 import { requireActiveSchool } from "@/lib/tenant";
@@ -47,6 +48,7 @@ export async function PageShell({
           ) : null}
           {children}
         </div>
+        <ScrollFloatingButton />
       </main>
     </div>
   );
