@@ -40,15 +40,15 @@ export default async function SettingsPage() {
       title="Settings"
       description="Account settings, school profile, leadership goals, user access, and active school context."
     >
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="section-grid md:grid-cols-2">
         <Card>
           <CardHeader><CardTitle>Account</CardTitle></CardHeader>
           <CardContent className="space-y-3 text-sm">
-            <div>
+            <div className="panel-note">
               <div className="text-gray-500">Signed in as</div>
               <div className="font-medium text-gray-900">{session.user.email}</div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Badge variant="info">{roleLabel(session.user.role)}</Badge>
               {isSuperAdmin ? <Badge variant="warning">Multi-school</Badge> : null}
             </div>
@@ -60,20 +60,34 @@ export default async function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle>School context</CardTitle>
-              <p className="mt-2 text-sm text-gray-600">Choose the active school. The selection is stored in <span className="font-mono">{activeSchoolCookieName()}</span>.</p>
+              <p className="mt-2 text-sm leading-6 text-gray-600">Choose the active school. The selection is stored in <span className="break-all font-mono">{activeSchoolCookieName()}</span>.</p>
             </CardHeader>
             <CardContent className="space-y-4">
               <form className="space-y-3" action={setActiveSchool}>
-                <Select name="schoolId" defaultValue={schoolId}>
-                  {schools.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-                </Select>
+                <div className="field-stack">
+                  <label className="field-label" htmlFor="active-school-id">Active school</label>
+                  <Select id="active-school-id" name="schoolId" defaultValue={schoolId}>
+                    {schools.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                  </Select>
+                </div>
                 <input type="hidden" name="redirectTo" value="/settings" />
                 <Button variant="secondary" type="submit">Switch context</Button>
               </form>
               <form className="space-y-3 border-t border-[var(--border)] pt-4" action={createSchool}>
-                <Input name="name" placeholder="New school name" />
-                <Input name="city" placeholder="City" />
-                <Input name="timezone" defaultValue="Asia/Jakarta" placeholder="Timezone" />
+                <div className="field-stack">
+                  <label className="field-label" htmlFor="new-school-name">School name</label>
+                  <Input id="new-school-name" name="name" placeholder="New school name" />
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="field-stack">
+                    <label className="field-label" htmlFor="new-school-city">City</label>
+                    <Input id="new-school-city" name="city" placeholder="City" />
+                  </div>
+                  <div className="field-stack">
+                    <label className="field-label" htmlFor="new-school-timezone">Timezone</label>
+                    <Input id="new-school-timezone" name="timezone" defaultValue="Asia/Jakarta" placeholder="Timezone" />
+                  </div>
+                </div>
                 <Button variant="primary" type="submit">Create school</Button>
               </form>
             </CardContent>
@@ -89,10 +103,10 @@ export default async function SettingsPage() {
         </Card>
       ) : null}
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-[1.1fr,0.9fr]">
+      <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1.1fr),minmax(320px,0.9fr)] lg:gap-6">
         <Card>
           <CardHeader><CardTitle>{canAdmin ? "School profile 2.0" : "School profile snapshot"}</CardTitle></CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             {canAdmin ? (
               <form className="space-y-4" action={updateSchool}>
                 <div className="grid gap-3 md:grid-cols-2">
@@ -142,7 +156,7 @@ export default async function SettingsPage() {
                     <option value="HIGH">HIGH</option>
                     <option value="PREMIUM">PREMIUM</option>
                   </Select>
-                  <div className="rounded-md border border-[var(--border)] px-3 py-2 text-sm text-gray-700">
+                  <div className="flex items-center rounded-xl border border-[var(--border)] bg-[var(--soft)] px-3.5 py-3 text-sm text-gray-700">
                     Stage: <span className="font-medium text-gray-900">{formatEnumLabel(school.transformationStage)}</span>
                   </div>
                 </div>
@@ -159,24 +173,45 @@ export default async function SettingsPage() {
                   <label className="mb-1 block text-sm font-medium text-gray-700">Current tooling</label>
                   <Textarea name="currentToolingText" defaultValue={currentTooling.join("\n")} placeholder="One per line" />
                 </div>
-                <Textarea name="constraints" defaultValue={school.constraints ?? ""} placeholder="Constraints" />
-                <Textarea name="nonNegotiables" defaultValue={(school as any).nonNegotiables ?? ""} placeholder="Non-negotiables" />
-                <Textarea name="aiAdoptionGoal" defaultValue={(school as any).aiAdoptionGoal ?? ""} placeholder="AI adoption goal" />
-                <Textarea name="individualizedLearningGoal" defaultValue={(school as any).individualizedLearningGoal ?? ""} placeholder="Individualized learning goal" />
-                <Textarea name="projectBasedLearningGoal" defaultValue={(school as any).projectBasedLearningGoal ?? ""} placeholder="Projects goal" />
-                <Textarea name="selGoal" defaultValue={(school as any).selGoal ?? ""} placeholder="SEL goal" />
-                <Textarea name="school2Vision" defaultValue={(school as any).school2Vision ?? ""} placeholder="School 2.0 vision" />
+                <div className="field-stack">
+                  <label className="field-label" htmlFor="constraints">Constraints</label>
+                  <Textarea id="constraints" name="constraints" defaultValue={school.constraints ?? ""} placeholder="Constraints" />
+                </div>
+                <div className="field-stack">
+                  <label className="field-label" htmlFor="non-negotiables">Non-negotiables</label>
+                  <Textarea id="non-negotiables" name="nonNegotiables" defaultValue={(school as any).nonNegotiables ?? ""} placeholder="Non-negotiables" />
+                </div>
+                <div className="field-stack">
+                  <label className="field-label" htmlFor="ai-adoption-goal">AI adoption goal</label>
+                  <Textarea id="ai-adoption-goal" name="aiAdoptionGoal" defaultValue={(school as any).aiAdoptionGoal ?? ""} placeholder="AI adoption goal" />
+                </div>
+                <div className="field-stack">
+                  <label className="field-label" htmlFor="individualized-learning-goal">Individualized learning goal</label>
+                  <Textarea id="individualized-learning-goal" name="individualizedLearningGoal" defaultValue={(school as any).individualizedLearningGoal ?? ""} placeholder="Individualized learning goal" />
+                </div>
+                <div className="field-stack">
+                  <label className="field-label" htmlFor="project-goal">Project-based learning goal</label>
+                  <Textarea id="project-goal" name="projectBasedLearningGoal" defaultValue={(school as any).projectBasedLearningGoal ?? ""} placeholder="Projects goal" />
+                </div>
+                <div className="field-stack">
+                  <label className="field-label" htmlFor="sel-goal">SEL goal</label>
+                  <Textarea id="sel-goal" name="selGoal" defaultValue={(school as any).selGoal ?? ""} placeholder="SEL goal" />
+                </div>
+                <div className="field-stack">
+                  <label className="field-label" htmlFor="school-vision">School 2.0 vision</label>
+                  <Textarea id="school-vision" name="school2Vision" defaultValue={(school as any).school2Vision ?? ""} placeholder="School 2.0 vision" />
+                </div>
                 <Button variant="primary" type="submit">Save school profile</Button>
               </form>
             ) : (
               <div className="space-y-3 text-sm text-gray-700">
-                <div><span className="font-medium text-gray-900">{school.name}</span> • {school.city}{(school as any).region ? `, ${(school as any).region}` : ""}</div>
-                <div>Stage: {formatEnumLabel(school.transformationStage)}</div>
-                <div>Curriculum: {school.curriculum ?? "Not set"}</div>
-                <div>Enrollment: {(school as any).enrollment ?? school.studentCount ?? "Not set"}</div>
-                <div>Staff count: {(school as any).staffCount ?? "Not set"}</div>
-                <div>Priority outcomes: {priorityOutcomes.length ? priorityOutcomes.join(", ") : "Not documented yet"}</div>
-                <div>Vision: {(school as any).school2Vision ?? "No School 2.0 vision saved yet."}</div>
+                <div className="panel-note"><span className="font-medium text-gray-900">{school.name}</span> • {school.city}{(school as any).region ? `, ${(school as any).region}` : ""}</div>
+                <div className="panel-note">Stage: {formatEnumLabel(school.transformationStage)}</div>
+                <div className="panel-note">Curriculum: {school.curriculum ?? "Not set"}</div>
+                <div className="panel-note">Enrollment: {(school as any).enrollment ?? school.studentCount ?? "Not set"}</div>
+                <div className="panel-note">Staff count: {(school as any).staffCount ?? "Not set"}</div>
+                <div className="panel-note">Priority outcomes: {priorityOutcomes.length ? priorityOutcomes.join(", ") : "Not documented yet"}</div>
+                <div className="panel-note">Vision: {(school as any).school2Vision ?? "No School 2.0 vision saved yet."}</div>
               </div>
             )}
           </CardContent>
@@ -188,21 +223,27 @@ export default async function SettingsPage() {
               <CardHeader><CardTitle>Invite users</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 <form className="space-y-3" action={createInvite}>
-                  <Input name="email" placeholder="name@school.id" />
-                  <Select name="role" defaultValue="STAFF">
-                    <option value="ADMIN">ADMIN</option>
-                    <option value="STAFF">STAFF</option>
-                    <option value="IT">IT</option>
-                    <option value="COACH">COACH</option>
-                    <option value="TEACHER">TEACHER</option>
-                  </Select>
+                  <div className="field-stack">
+                    <label className="field-label" htmlFor="invite-email">Email</label>
+                    <Input id="invite-email" name="email" placeholder="name@school.id" />
+                  </div>
+                  <div className="field-stack">
+                    <label className="field-label" htmlFor="invite-role">Role</label>
+                    <Select id="invite-role" name="role" defaultValue="STAFF">
+                      <option value="ADMIN">ADMIN</option>
+                      <option value="STAFF">STAFF</option>
+                      <option value="IT">IT</option>
+                      <option value="COACH">COACH</option>
+                      <option value="TEACHER">TEACHER</option>
+                    </Select>
+                  </div>
                   <Button variant="secondary" type="submit">Create invite</Button>
                 </form>
                 <div className="space-y-2 text-sm text-gray-600">
                   {invites.map((invite) => (
-                    <div key={invite.id} className="rounded-md border border-[var(--border)] px-3 py-2">
+                    <div key={invite.id} className="rounded-xl border border-[var(--border)] bg-[var(--soft)]/85 px-3.5 py-3">
                       <div className="font-medium text-gray-900">{invite.email}</div>
-                      <div>{invite.role} • expires {formatDateTime(new Date(invite.expiresAt))}</div>
+                      <div className="mt-1 leading-6">{invite.role} • expires {formatDateTime(new Date(invite.expiresAt))}</div>
                     </div>
                   ))}
                   {!invites.length ? <div>No pending invites.</div> : null}
@@ -216,24 +257,24 @@ export default async function SettingsPage() {
               <CardHeader><CardTitle>Users</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 {users.map((user) => (
-                  <div key={user.id} className="rounded-lg border border-[var(--border)] p-3">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
+                  <div key={user.id} className="rounded-2xl border border-[var(--border)] bg-[var(--soft)]/65 p-4">
+                    <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                      <div className="min-w-0">
                         <div className="font-medium text-gray-900">{user.name}</div>
                         <div className="text-sm text-gray-600">{user.email}</div>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <Badge variant={user.active ? "success" : "warning"}>{roleLabel(user.role)}</Badge>
-                        <form action={setUserRole}>
+                        <form action={setUserRole} className="flex flex-wrap items-center gap-2">
                           <input type="hidden" name="userId" value={user.id} />
-                          <select name="role" defaultValue={user.role} className="rounded-md border border-[var(--border)] px-2 py-1 text-sm">
+                          <select name="role" defaultValue={user.role} className="h-10 rounded-xl border border-[var(--border)] bg-white px-3 text-sm text-gray-900 shadow-sm">
                             <option value="ADMIN">ADMIN</option>
                             <option value="STAFF">STAFF</option>
                             <option value="IT">IT</option>
                             <option value="COACH">COACH</option>
                             <option value="TEACHER">TEACHER</option>
                           </select>
-                          <Button className="ml-2" variant="ghost" type="submit">Save</Button>
+                          <Button variant="ghost" type="submit">Save</Button>
                         </form>
                         <form action={setUserActive}>
                           <input type="hidden" name="userId" value={user.id} />

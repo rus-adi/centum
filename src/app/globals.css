@@ -4,10 +4,14 @@
 
 :root {
   --border: #E5E7EB;
+  --border-strong: #D1D5DB;
   --muted: #6B7280;
   --bg: #FFFFFF;
   --soft: #F9FAFB;
+  --soft-strong: #F3F4F6;
   --primary: #3B82F6;
+  --primary-strong: #1D4ED8;
+  --text: #0F172A;
 }
 
 html, body {
@@ -15,7 +19,76 @@ html, body {
   background: var(--bg);
 }
 
-* { box-sizing: border-box; }
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  color: var(--text);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+a {
+  text-underline-offset: 0.18em;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(59, 130, 246, 0.18);
+}
+
+:focus-visible {
+  outline: 2px solid rgba(59, 130, 246, 0.35);
+  outline-offset: 2px;
+}
 
 ::-webkit-scrollbar { height: 10px; width: 10px; }
 ::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 8px; }
+
+@layer components {
+  .surface-card {
+    @apply rounded-2xl border border-[var(--border)] bg-white shadow-card;
+  }
+
+  .section-grid {
+    @apply grid gap-4 lg:gap-6;
+  }
+
+  .page-intro {
+    @apply flex flex-col gap-3 rounded-2xl border border-[var(--border)] bg-white/90 px-5 py-5 shadow-card sm:px-6;
+  }
+
+  .toolbar {
+    @apply flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center md:justify-between;
+  }
+
+  .filter-bar {
+    @apply flex flex-col gap-3 rounded-2xl border border-[var(--border)] bg-[var(--soft)]/85 p-4 sm:p-5 lg:flex-row lg:flex-wrap lg:items-end;
+  }
+
+  .field-stack {
+    @apply flex min-w-0 flex-col gap-1.5;
+  }
+
+  .field-label {
+    @apply text-sm font-medium text-gray-700;
+  }
+
+  .panel-note {
+    @apply rounded-xl border border-[var(--border)] bg-[var(--soft)] px-4 py-3 text-sm leading-6 text-gray-600;
+  }
+}
