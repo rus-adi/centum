@@ -3,16 +3,12 @@ import { Bell, Menu } from "lucide-react";
 import { requireActiveSchool } from "@/lib/tenant";
 import { prisma } from "@/lib/prisma";
 import { ProfileMenu } from "@/components/layout/profile-menu";
-import { Badge } from "@/components/ui/badge";
-import { formatEnumLabel } from "@/lib/school2/helpers";
 
 export async function Topbar({
   title,
-  description,
   navToggleId
 }: {
   title: string;
-  description?: string;
   navToggleId: string;
 }) {
   const { session, school } = await requireActiveSchool();
@@ -34,14 +30,6 @@ export async function Topbar({
           <div className="min-w-0 flex-1">
             <div className="truncate text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-500 sm:text-xs">{school.name}</div>
             <div className="mt-1 break-words text-xl font-semibold leading-tight text-gray-900 sm:text-2xl">{title}</div>
-            {description ? <div className="mt-1 max-w-3xl text-sm leading-6 text-gray-500">{description}</div> : null}
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <Badge variant="info">{formatEnumLabel(session.user.role)}</Badge>
-              {school.transformationStage ? (
-                <Badge variant="neutral">{formatEnumLabel(school.transformationStage)}</Badge>
-              ) : null}
-              {school.readinessScore ? <Badge variant="warning">Readiness {school.readinessScore}</Badge> : null}
-            </div>
           </div>
         </div>
 
