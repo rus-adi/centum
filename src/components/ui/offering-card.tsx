@@ -39,7 +39,7 @@ export function OfferingCard(props: {
     <Card className={isPlaceholder ? "h-full border-amber-300 bg-amber-50/40" : "h-full"}>
       <CardContent className="flex h-full flex-col gap-4 pt-6">
         <div className="flex items-start gap-3">
-          <div className={isPlaceholder ? "rounded-2xl border border-amber-200 bg-amber-100 p-2.5 text-amber-700" : "rounded-2xl border border-blue-200 bg-blue-50 p-2.5 text-blue-700"}>
+          <div className={isPlaceholder ? "rounded-2xl border border-amber-200 bg-[linear-gradient(180deg,#fef3c7_0%,#fde68a_100%)] p-2.5 text-amber-700 shadow-[0_10px_22px_rgba(245,158,11,0.14)]" : "rounded-2xl border border-blue-200 bg-[linear-gradient(180deg,#eff6ff_0%,#dbeafe_100%)] p-2.5 text-blue-700 shadow-[0_10px_22px_rgba(37,99,235,0.14)]"}>
             {iconFor(iconKey)}
           </div>
           <div className="min-w-0 flex-1">
@@ -64,7 +64,7 @@ export function OfferingCard(props: {
             {isPlaceholder ? "Placeholder link — replace later" : "Live linked destination"}
           </div>
           <a
-            className={isPlaceholder ? "inline-flex min-h-10 items-center gap-2 rounded-xl border border-amber-300 bg-white px-3.5 py-2 text-sm font-medium text-amber-900 transition hover:bg-amber-100" : "inline-flex min-h-10 items-center gap-2 rounded-xl border border-[var(--border)] px-3.5 py-2 text-sm font-medium text-gray-900 transition hover:bg-gray-50"}
+            className={isPlaceholder ? "inline-flex min-h-10 items-center gap-2 rounded-xl border border-amber-300 bg-white px-3.5 py-2 text-sm font-medium text-amber-900 shadow-[0_8px_18px_rgba(245,158,11,0.12)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-amber-100" : "inline-flex min-h-10 items-center gap-2 rounded-xl border border-[var(--border)] bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] px-3.5 py-2 text-sm font-medium text-gray-900 shadow-[0_8px_18px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-200 hover:bg-[linear-gradient(180deg,#ffffff_0%,#eef4ff_100%)] hover:text-blue-700"}
             href={href}
             target="_blank"
             rel="noreferrer"

@@ -3,14 +3,17 @@
 @tailwind utilities;
 
 :root {
-  --border: #E5E7EB;
-  --border-strong: #D1D5DB;
-  --muted: #6B7280;
+  --border: #D9E2F0;
+  --border-strong: #BFCDE4;
+  --muted: #64748B;
   --bg: #FFFFFF;
-  --soft: #F9FAFB;
-  --soft-strong: #F3F4F6;
-  --primary: #3B82F6;
+  --soft: #F6F9FF;
+  --soft-strong: #EEF4FF;
+  --primary: #2563EB;
   --primary-strong: #1D4ED8;
+  --primary-rgb: 37 99 235;
+  --accent: #7C3AED;
+  --accent-rgb: 124 58 237;
   --text: #0F172A;
 }
 
@@ -26,6 +29,9 @@ html {
 body {
   margin: 0;
   color: var(--text);
+  background:
+    radial-gradient(circle at top, rgba(var(--primary-rgb), 0.08), transparent 24rem),
+    linear-gradient(180deg, #f8fbff 0%, #ffffff 26%, #f8fafc 100%);
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -48,11 +54,11 @@ textarea {
 }
 
 ::selection {
-  background: rgba(59, 130, 246, 0.18);
+  background: rgba(var(--primary-rgb), 0.18);
 }
 
 :focus-visible {
-  outline: 2px solid rgba(59, 130, 246, 0.35);
+  outline: 2px solid rgba(var(--primary-rgb), 0.35);
   outline-offset: 2px;
 }
 
@@ -63,8 +69,11 @@ textarea {
   .surface-card {
     border: 1px solid var(--border);
     border-radius: 1rem;
-    background: #fff;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.98));
+    box-shadow:
+      0 1px 2px rgba(15, 23, 42, 0.04),
+      0 14px 34px rgba(15, 23, 42, 0.05);
   }
 
   .section-grid {
@@ -84,9 +93,12 @@ textarea {
     gap: 0.75rem;
     border: 1px solid var(--border);
     border-radius: 1rem;
-    background: rgba(255, 255, 255, 0.9);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(246, 249, 255, 0.96));
     padding: 1.25rem;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    box-shadow:
+      0 1px 2px rgba(15, 23, 42, 0.04),
+      0 14px 34px rgba(15, 23, 42, 0.05);
   }
 
   @media (min-width: 640px) {
@@ -117,8 +129,10 @@ textarea {
     gap: 0.75rem;
     border: 1px solid var(--border);
     border-radius: 1rem;
-    background: rgba(249, 250, 251, 0.85);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(246, 249, 255, 0.88));
     padding: 1rem;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
   }
 
   @media (min-width: 640px) {
@@ -151,7 +165,7 @@ textarea {
   .panel-note {
     border: 1px solid var(--border);
     border-radius: 0.75rem;
-    background: var(--soft);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(246, 249, 255, 0.95));
     padding: 0.75rem 1rem;
     font-size: 0.875rem;
     line-height: 1.5rem;

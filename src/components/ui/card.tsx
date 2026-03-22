@@ -4,7 +4,7 @@ export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElemen
   return (
     <div
       className={clsx(
-        "surface-card overflow-hidden transition-shadow duration-200 hover:shadow-[0_10px_30px_rgba(15,23,42,0.08)]",
+        "surface-card overflow-hidden transition-all duration-300 hover:-translate-y-0.5 hover:border-[var(--border-strong)] hover:shadow-[0_22px_48px_rgba(37,99,235,0.1)]",
         className
       )}
       {...props}
