@@ -12,7 +12,12 @@ const styles: Record<Variant, string> = {
 
 export function Badge({ variant = "neutral", children }: { variant?: Variant; children: React.ReactNode }) {
   return (
-    <span className={clsx("inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium", styles[variant])}>
+    <span
+      className={clsx(
+        "inline-flex max-w-full items-center rounded-full border px-2.5 py-1 text-xs font-semibold leading-4 tracking-[0.01em]",
+        styles[variant]
+      )}
+    >
       {children}
     </span>
   );
