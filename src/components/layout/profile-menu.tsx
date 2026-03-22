@@ -44,7 +44,7 @@ export function ProfileMenu({
     <div ref={ref} className="relative">
       <button
         type="button"
-        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border)] bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50"
+        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] bg-gradient-to-br from-slate-50 to-white text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50"
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
@@ -55,19 +55,19 @@ export function ProfileMenu({
 
       <div
         className={clsx(
-          "absolute right-0 mt-2 w-56 overflow-hidden rounded-lg border border-[var(--border)] bg-white shadow-sm",
+          "absolute right-0 mt-2 w-64 overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-[0_18px_48px_rgba(15,23,42,0.14)]",
           open ? "block" : "hidden"
         )}
         role="menu"
       >
-        <div className="px-4 py-3">
+        <div className="bg-[var(--soft)] px-4 py-3">
           <div className="truncate text-sm font-medium text-gray-900">{name || "My account"}</div>
           {email ? <div className="truncate text-xs text-gray-600">{email}</div> : null}
         </div>
         <div className="h-px bg-[var(--border)]" />
         <Link
           href="/profile"
-          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+          className="flex items-center gap-2 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
           role="menuitem"
           onClick={() => setOpen(false)}
         >
@@ -76,7 +76,7 @@ export function ProfileMenu({
         </Link>
         <button
           type="button"
-          className="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+          className="flex w-full items-center gap-2 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
           role="menuitem"
           onClick={() => {
             setOpen(false);
