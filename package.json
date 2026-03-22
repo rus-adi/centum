@@ -10,11 +10,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "prisma generate",
-    "prisma:generate": "prisma generate",
+    "typecheck": "tsc --noEmit",
+    "verify:offline": "npm run prisma:generate && npm run typecheck && npx eslint src prisma/seed.js && node --check prisma/seed.js",
+    "postinstall": "node scripts/postinstall.cjs",
+    "prisma:generate": "node scripts/postinstall.cjs",
     "prisma:push": "prisma db push",
     "prisma:seed": "node prisma/seed.js",
-    "vercel-build": "prisma generate && prisma db push && node prisma/seed.js && next build"
+    "vercel-build": "node scripts/postinstall.cjs && prisma db push && node prisma/seed.js && next build",
+    "prisma:generate:fallback": "node scripts/prisma-fallback.cjs"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

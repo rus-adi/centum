@@ -7,11 +7,13 @@ import { prisma } from "@/lib/prisma";
 import { requireActiveSchool } from "@/lib/tenant";
 import { addGovernanceVersion } from "@/app/actions/governance";
 import { GOVERNANCE_CATEGORY_LABELS } from "@/lib/school2/governance";
+import { canManageGovernance } from "@/lib/permissions";
 
 const db = prisma as any;
 
 export default async function GovernanceDocumentDetailPage({ params }: { params: { id: string } }) {
-  const { schoolId } = await requireActiveSchool();
+  const { schoolId, session } = await requireActiveSchool();
+  const canManage = canManageGovernance(session.user.role);
   const document = await db.governanceDocument.findFirst({
     where: { id: params.id, schoolId },
     include: {
@@ -45,18 +47,29 @@ export default async function GovernanceDocumentDetailPage({ params }: { params:
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Add a new version</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form className="space-y-3" action={addGovernanceVersion.bind(null, document.id)}>
-              <input name="originalFilename" className="w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm" placeholder="Original filename (optional)" />
-              <textarea name="body" className="min-h-[180px] w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm" placeholder="Paste the updated policy or SOP text here" />
-              <Button variant="primary" type="submit">Add version</Button>
-            </form>
-          </CardContent>
-        </Card>
+        {canManage ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Add a new version</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form className="space-y-3" action={addGovernanceVersion.bind(null, document.id)}>
+                <input name="originalFilename" className="w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm" placeholder="Original filename (optional)" />
+                <textarea name="body" className="min-h-[180px] w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm" placeholder="Paste the updated policy or SOP text here" />
+                <Button variant="primary" type="submit">Add version</Button>
+              </form>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>Leadership-only version controls</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-gray-600">
+              Version upload is hidden for your role. You can still review quotes and open a styled source preview for each stored version.
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <div className="mt-6 grid gap-4">
@@ -68,14 +81,18 @@ export default async function GovernanceDocumentDetailPage({ params }: { params:
             <CardContent className="space-y-4">
               <div className="text-sm text-gray-600">
                 {version.originalFilename ? `${version.originalFilename} • ` : ""}
-                <a className="font-medium text-blue-700 hover:underline" href={`/api/governance-files/${version.id}`}>
-                  Open source file
+                <a className="font-medium text-blue-700 hover:underline" href={`/governance/source/${version.id}`}>
+                  Open source preview
+                </a>
+                <span className="px-2 text-gray-300">•</span>
+                <a className="font-medium text-gray-700 hover:underline" href={`/api/governance-files/${version.id}`}>
+                  Raw file
                 </a>
               </div>
               <div className="grid gap-3">
                 {version.chunks.length ? (
                   version.chunks.map((chunk: any) => (
-                    <QuoteCard key={chunk.id} title={`Chunk ${chunk.ordinal + 1}`} quote={chunk.content} href={`/api/governance-files/${version.id}`} />
+                    <QuoteCard key={chunk.id} title={`Chunk ${chunk.ordinal + 1}`} quote={chunk.content} href={`/governance/source/${version.id}`} />
                   ))
                 ) : (
                   <div className="text-sm text-gray-600">No chunks generated for this version yet.</div>

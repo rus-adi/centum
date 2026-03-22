@@ -9,59 +9,65 @@ datasource db {
 }
 
 model School {
-  id                          String                  @id @default(cuid())
-  name                        String
-  city                        String
-  region                      String?
-  timezone                    String                  @default("Asia/Jakarta")
-  createdAt                   DateTime                @default(now())
-  updatedAt                   DateTime                @default(now()) @updatedAt
-  type                        SchoolType?
-  curriculum                  String?
-  curriculumNotes             String?
-  gradeBands                  Json?
-  studentCount                Int?
-  enrollment                  Int?
-  staffCount                  Int?
-  deviceModel                 DeviceModel?
-  deviceRatio                 String?
-  ecosystem                   Ecosystem?
-  connectivity                Connectivity?
-  constraints                 String?
-  nonNegotiables              String?
-  priorityOutcomes            Json?
-  currentTooling              Json?
-  budgetSensitivity           ToolCostTier?
-  maturityScore               Int                     @default(0)
-  readinessScore              Int                     @default(0)
-  transformationStage         SchoolStage             @default(ONBOARDING)
-  transformationProgress      Int                     @default(0)
-  aiAdoptionGoal              String?
-  individualizedLearningGoal  String?
-  projectBasedLearningGoal    String?
-  selGoal                     String?
-  school2Vision               String?
-  auditLogs                   AuditLog[]
-  attachments                 FileAttachment[]
-  bundleAdoptions             SchoolBundleAdoption[]
-  copilotRuns                 CopilotRun[]
-  copilotRecommendations      CopilotRecommendation[]
-  gates                       ImplementationGate[]
-  governanceDocuments         GovernanceDocument[]
-  governanceQueries           GovernanceQuery[]
-  growthAssets                GrowthAsset[]
-  inviteTokens                InviteToken[]
-  licenses                    License[]
-  notifications               Notification[]
-  packAdoptions               SchoolPackAdoption[]
-  requests                    Request[]
-  tickets                     Ticket[]
-  toolRecommendations         ToolRecommendation[]
-  tools                       SchoolTool[]
-  students                    Student[]
-  toolUsageLogs               ToolUsageLog[]
-  updates                     UpdatePost[]
-  users                       User[]
+  id                         String                  @id @default(cuid())
+  name                       String
+  city                       String
+  region                     String?
+  addressLine1               String?
+  website                    String?
+  contactEmail               String?
+  contactPhone               String?
+  schoolNotes                String?
+  isDemo                     Boolean                 @default(false)
+  timezone                   String                  @default("Asia/Jakarta")
+  createdAt                  DateTime                @default(now())
+  updatedAt                  DateTime                @updatedAt
+  type                       SchoolType?
+  curriculum                 String?
+  curriculumNotes            String?
+  gradeBands                 Json?
+  studentCount               Int?
+  enrollment                 Int?
+  staffCount                 Int?
+  deviceModel                DeviceModel?
+  deviceRatio                String?
+  ecosystem                  Ecosystem?
+  connectivity               Connectivity?
+  constraints                String?
+  nonNegotiables             String?
+  priorityOutcomes           Json?
+  currentTooling             Json?
+  budgetSensitivity          ToolCostTier?
+  maturityScore              Int                     @default(0)
+  readinessScore             Int                     @default(0)
+  transformationStage        SchoolStage             @default(ONBOARDING)
+  transformationProgress     Int                     @default(0)
+  aiAdoptionGoal             String?
+  individualizedLearningGoal String?
+  projectBasedLearningGoal   String?
+  selGoal                    String?
+  school2Vision              String?
+  auditLogs                  AuditLog[]
+  attachments                FileAttachment[]
+  bundleAdoptions            SchoolBundleAdoption[]
+  copilotRuns                CopilotRun[]
+  gates                      ImplementationGate[]
+  governanceDocuments        GovernanceDocument[]
+  governanceQueries          GovernanceQuery[]
+  growthAssets               GrowthAsset[]
+  inviteTokens               InviteToken[]
+  licenses                   License[]
+  notifications              Notification[]
+  packAdoptions              SchoolPackAdoption[]
+  requests                   Request[]
+  tickets                    Ticket[]
+  toolRecommendations        ToolRecommendation[]
+  tools                      SchoolTool[]
+  students                   Student[]
+  toolUsageLogs              ToolUsageLog[]
+  updates                    UpdatePost[]
+  users                      User[]
+  CopilotRecommendation      CopilotRecommendation[]
 
   @@index([createdAt])
   @@index([transformationStage])
@@ -101,116 +107,116 @@ model KnowledgeArticle {
 }
 
 model StackBundle {
-  id                String                 @id @default(cuid())
-  key               String                 @unique
-  name              String
-  category          String
-  description       String
-  overview          String?
-  toolKeys          Json?
-  recommendedRoles  Json?
-  createdAt         DateTime               @default(now())
-  updatedAt         DateTime               @default(now()) @updatedAt
-  bundleAdoptions   SchoolBundleAdoption[]
+  id               String                 @id @default(cuid())
+  key              String                 @unique
+  name             String
+  category         String
+  description      String
+  overview         String?
+  toolKeys         Json?
+  recommendedRoles Json?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  bundleAdoptions  SchoolBundleAdoption[]
 
   @@index([category])
 }
 
 model TransformationPack {
-  id                         String               @id @default(cuid())
-  key                        String               @unique
-  slug                       String               @unique
-  name                       String
-  pillar                     PackPillar
-  description                String
-  overview                   String
-  readinessChecklist         Json?
-  implementationMilestones   Json?
-  templateResources          Json?
-  recommendedToolCategories  Json?
-  optionalBundleKeys         Json?
-  proofPoints                Json?
-  nextActions                Json?
-  suggestedTrainingKeys      Json?
-  createdAt                  DateTime             @default(now())
-  updatedAt                  DateTime             @updatedAt
-  schoolAdoptions            SchoolPackAdoption[]
+  id                        String               @id @default(cuid())
+  key                       String               @unique
+  slug                      String               @unique
+  name                      String
+  pillar                    PackPillar
+  description               String
+  overview                  String
+  readinessChecklist        Json?
+  implementationMilestones  Json?
+  templateResources         Json?
+  recommendedToolCategories Json?
+  optionalBundleKeys        Json?
+  proofPoints               Json?
+  nextActions               Json?
+  suggestedTrainingKeys     Json?
+  createdAt                 DateTime             @default(now())
+  updatedAt                 DateTime             @updatedAt
+  schoolAdoptions           SchoolPackAdoption[]
 
   @@index([pillar])
 }
 
 model SchoolPackAdoption {
-  id          String          @id @default(cuid())
+  id          String             @id @default(cuid())
   schoolId    String
   packId      String
-  status      AdoptionStatus  @default(RECOMMENDED)
+  status      AdoptionStatus     @default(RECOMMENDED)
   ownerId     String?
   notes       String?
   startedAt   DateTime?
   completedAt DateTime?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  owner       User?           @relation("PackOwner", fields: [ownerId], references: [id])
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  owner       User?              @relation("PackOwner", fields: [ownerId], references: [id])
   pack        TransformationPack @relation(fields: [packId], references: [id])
-  school      School          @relation(fields: [schoolId], references: [id])
+  school      School             @relation(fields: [schoolId], references: [id])
 
   @@unique([schoolId, packId])
   @@index([schoolId, status])
 }
 
 model SchoolBundleAdoption {
-  id          String          @id @default(cuid())
+  id          String         @id @default(cuid())
   schoolId    String
   bundleId    String
-  status      AdoptionStatus  @default(RECOMMENDED)
+  status      AdoptionStatus @default(RECOMMENDED)
   ownerId     String?
   notes       String?
   startedAt   DateTime?
   completedAt DateTime?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  bundle      StackBundle     @relation(fields: [bundleId], references: [id])
-  owner       User?           @relation("BundleOwner", fields: [ownerId], references: [id])
-  school      School          @relation(fields: [schoolId], references: [id])
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  bundle      StackBundle    @relation(fields: [bundleId], references: [id])
+  owner       User?          @relation("BundleOwner", fields: [ownerId], references: [id])
+  school      School         @relation(fields: [schoolId], references: [id])
 
   @@unique([schoolId, bundleId])
   @@index([schoolId, status])
 }
 
 model User {
-  id                          String               @id @default(cuid())
-  email                       String               @unique
+  id                          String                      @id @default(cuid())
+  email                       String                      @unique
   name                        String
   password                    String
-  role                        UserRole             @default(STAFF)
-  active                      Boolean              @default(true)
+  role                        UserRole                    @default(STAFF)
+  active                      Boolean                     @default(true)
   schoolId                    String?
-  createdAt                   DateTime             @default(now())
-  auditActor                  AuditLog[]           @relation("AuditActor")
-  attachments                 FileAttachment[]     @relation("AttachmentUploader")
-  assignedRequests            Request[]            @relation("AssignedRequests")
-  assignedTickets             Ticket[]             @relation("AssignedTickets")
-  bundleOwnerships            SchoolBundleAdoption[] @relation("BundleOwner")
-  copilotRuns                 CopilotRun[]         @relation("CopilotAuthor")
-  governanceDocumentsAuthored GovernanceDocument[] @relation("GovernanceDocumentAuthor")
-  governanceQueries           GovernanceQuery[]    @relation("GovernanceQueryAuthor")
+  createdAt                   DateTime                    @default(now())
+  auditActor                  AuditLog[]                  @relation("AuditActor")
+  attachments                 FileAttachment[]            @relation("AttachmentUploader")
+  assignedRequests            Request[]                   @relation("AssignedRequests")
+  assignedTickets             Ticket[]                    @relation("AssignedTickets")
+  bundleOwnerships            SchoolBundleAdoption[]      @relation("BundleOwner")
+  copilotRuns                 CopilotRun[]                @relation("CopilotAuthor")
+  governanceDocumentsAuthored GovernanceDocument[]        @relation("GovernanceDocumentAuthor")
+  governanceQueries           GovernanceQuery[]           @relation("GovernanceQueryAuthor")
   governanceVersionsUploaded  GovernanceDocumentVersion[] @relation("GovernanceVersionUploader")
-  growthAssetsAuthored        GrowthAsset[]        @relation("GrowthAssetAuthor")
-  inviteSent                  InviteToken[]        @relation("InviteSender")
+  growthAssetsAuthored        GrowthAsset[]               @relation("GrowthAssetAuthor")
+  inviteSent                  InviteToken[]               @relation("InviteSender")
   notifications               Notification[]
-  packOwnerships              SchoolPackAdoption[] @relation("PackOwner")
+  packOwnerships              SchoolPackAdoption[]        @relation("PackOwner")
   passwordResetTokens         PasswordResetToken[]
   requestComments             RequestComment[]
   requestEvents               RequestEvent[]
-  submittedRequests           Request[]            @relation("SubmittedRequests")
-  submittedTickets            Ticket[]             @relation("SubmittedTickets")
+  submittedRequests           Request[]                   @relation("SubmittedRequests")
+  submittedTickets            Ticket[]                    @relation("SubmittedTickets")
   ticketComments              TicketComment[]
   ticketEvents                TicketEvent[]
-  toolRecommendationsAuthored ToolRecommendation[] @relation("ToolRecommendationAuthor")
+  toolRecommendationsAuthored ToolRecommendation[]        @relation("ToolRecommendationAuthor")
   toolUsageLogs               ToolUsageLog[]
   trainingCompletions         TrainingCompletion[]
   trainingProgress            TrainingProgress[]
-  school                      School?              @relation(fields: [schoolId], references: [id])
+  school                      School?                     @relation(fields: [schoolId], references: [id])
 
   @@index([schoolId])
   @@index([role])
@@ -308,33 +314,33 @@ model Student {
 }
 
 model Tool {
-  id                       String                @id @default(cuid())
-  key                      String                @unique
-  name                     String
-  description              String
-  category                 String?
-  useCase                  String?
-  visibility               ToolVisibility        @default(SCHOOL_VISIBLE)
-  maturity                 ToolMaturity          @default(ESTABLISHED)
-  costTier                 ToolCostTier          @default(MEDIUM)
-  riskLevel                ToolRiskLevel         @default(MEDIUM)
-  providerName             String?
-  providerNotes            String?
-  prerequisiteNotes        String?
-  gradeSuitability         Json?
-  recommendedRoles         Json?
-  regionFit                Json?
-  deviceRequirements       String?
-  connectivityRequirement  Connectivity?
-  createdAt                DateTime              @default(now())
-  updatedAt                DateTime              @default(now()) @updatedAt
-  licenses                 License[]
-  requests                 Request[]
-  schoolTools              SchoolTool[]
-  studentAccess            StudentToolAccess[]
-  recommendations          ToolRecommendation[]
-  requirements             ToolRequirement[]
-  usageLogs                ToolUsageLog[]
+  id                      String               @id @default(cuid())
+  key                     String               @unique
+  name                    String
+  description             String
+  category                String?
+  useCase                 String?
+  visibility              ToolVisibility       @default(SCHOOL_VISIBLE)
+  maturity                ToolMaturity         @default(ESTABLISHED)
+  costTier                ToolCostTier         @default(MEDIUM)
+  riskLevel               ToolRiskLevel        @default(MEDIUM)
+  providerName            String?
+  providerNotes           String?
+  prerequisiteNotes       String?
+  gradeSuitability        Json?
+  recommendedRoles        Json?
+  regionFit               Json?
+  deviceRequirements      String?
+  connectivityRequirement Connectivity?
+  createdAt               DateTime             @default(now())
+  updatedAt               DateTime             @updatedAt
+  licenses                License[]
+  requests                Request[]
+  schoolTools             SchoolTool[]
+  studentAccess           StudentToolAccess[]
+  recommendations         ToolRecommendation[]
+  requirements            ToolRequirement[]
+  usageLogs               ToolUsageLog[]
 
   @@index([name])
   @@index([visibility, costTier])
@@ -353,33 +359,33 @@ model ToolRequirement {
 }
 
 model ToolRecommendation {
-  id              String                @id @default(cuid())
+  id              String               @id @default(cuid())
   schoolId        String
   toolId          String
   reason          String
-  status          RecommendationStatus  @default(PENDING)
+  status          RecommendationStatus @default(PENDING)
   recommendedById String?
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
-  recommendedBy   User?                 @relation("ToolRecommendationAuthor", fields: [recommendedById], references: [id])
-  school          School                @relation(fields: [schoolId], references: [id])
-  tool            Tool                  @relation(fields: [toolId], references: [id])
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  recommendedBy   User?                @relation("ToolRecommendationAuthor", fields: [recommendedById], references: [id])
+  school          School               @relation(fields: [schoolId], references: [id])
+  tool            Tool                 @relation(fields: [toolId], references: [id])
 
   @@unique([schoolId, toolId])
   @@index([schoolId, status])
 }
 
 model SchoolTool {
-  id                String   @id @default(cuid())
-  schoolId          String
-  toolId            String
-  enabled           Boolean  @default(true)
-  eligible          String   @default("Grades 7–12")
-  recommended       Boolean  @default(false)
+  id                  String   @id @default(cuid())
+  schoolId            String
+  toolId              String
+  enabled             Boolean  @default(true)
+  eligible            String   @default("Grades 7–12")
+  recommended         Boolean  @default(false)
   implementationNotes String?
-  updatedAt         DateTime @updatedAt
-  school            School   @relation(fields: [schoolId], references: [id])
-  tool              Tool     @relation(fields: [toolId], references: [id])
+  updatedAt           DateTime @updatedAt
+  school              School   @relation(fields: [schoolId], references: [id])
+  tool                Tool     @relation(fields: [toolId], references: [id])
 
   @@unique([schoolId, toolId])
   @@index([schoolId, enabled])
@@ -608,28 +614,28 @@ model FileAttachment {
 }
 
 model GovernanceDocument {
-  id            String                     @id @default(cuid())
-  schoolId      String
-  title         String
-  category      GovernanceCategory
-  summary       String?
-  description   String?
-  pinned        Boolean                    @default(false)
-  status        GovernanceDocumentStatus   @default(ACTIVE)
-  createdById   String?
-  createdAt     DateTime                   @default(now())
-  updatedAt     DateTime                   @updatedAt
-  createdBy     User?                      @relation("GovernanceDocumentAuthor", fields: [createdById], references: [id])
-  school        School                     @relation(fields: [schoolId], references: [id])
-  versions      GovernanceDocumentVersion[]
-  querySources  GovernanceQuerySource[]
+  id           String                      @id @default(cuid())
+  schoolId     String
+  title        String
+  category     GovernanceCategory
+  summary      String?
+  description  String?
+  pinned       Boolean                     @default(false)
+  status       GovernanceDocumentStatus    @default(ACTIVE)
+  createdById  String?
+  createdAt    DateTime                    @default(now())
+  updatedAt    DateTime                    @updatedAt
+  createdBy    User?                       @relation("GovernanceDocumentAuthor", fields: [createdById], references: [id])
+  school       School                      @relation(fields: [schoolId], references: [id])
+  versions     GovernanceDocumentVersion[]
+  querySources GovernanceQuerySource[]
 
   @@index([schoolId, category])
   @@index([schoolId, pinned])
 }
 
 model GovernanceDocumentVersion {
-  id               String                   @id @default(cuid())
+  id               String                  @id @default(cuid())
   documentId       String
   version          Int
   originalFilename String?
@@ -638,9 +644,9 @@ model GovernanceDocumentVersion {
   body             String
   notes            String?
   uploadedById     String?
-  createdAt        DateTime                 @default(now())
-  document         GovernanceDocument       @relation(fields: [documentId], references: [id])
-  uploadedBy       User?                    @relation("GovernanceVersionUploader", fields: [uploadedById], references: [id])
+  createdAt        DateTime                @default(now())
+  document         GovernanceDocument      @relation(fields: [documentId], references: [id])
+  uploadedBy       User?                   @relation("GovernanceVersionUploader", fields: [uploadedById], references: [id])
   chunks           GovernanceChunk[]
   querySources     GovernanceQuerySource[]
 
@@ -649,12 +655,12 @@ model GovernanceDocumentVersion {
 }
 
 model GovernanceChunk {
-  id           String                  @id @default(cuid())
+  id           String                    @id @default(cuid())
   versionId    String
   ordinal      Int
   content      String
   keywordText  String?
-  createdAt    DateTime                @default(now())
+  createdAt    DateTime                  @default(now())
   querySources GovernanceQuerySource[]
   version      GovernanceDocumentVersion @relation(fields: [versionId], references: [id])
 
@@ -663,19 +669,19 @@ model GovernanceChunk {
 }
 
 model GovernanceQuery {
-  id                     String                  @id @default(cuid())
-  schoolId               String
-  userId                 String?
-  question               String
-  answer                 String
-  confidence             Int                     @default(50)
-  usedFallback           Boolean                 @default(true)
-  lowConfidence          Boolean                 @default(false)
-  escalationRecommended  Boolean                 @default(false)
-  createdAt              DateTime                @default(now())
-  school                 School                  @relation(fields: [schoolId], references: [id])
-  user                   User?                   @relation("GovernanceQueryAuthor", fields: [userId], references: [id])
-  sources                GovernanceQuerySource[]
+  id                    String                  @id @default(cuid())
+  schoolId              String
+  userId                String?
+  question              String
+  answer                String
+  confidence            Int                     @default(50)
+  usedFallback          Boolean                 @default(true)
+  lowConfidence         Boolean                 @default(false)
+  escalationRecommended Boolean                 @default(false)
+  createdAt             DateTime                @default(now())
+  school                School                  @relation(fields: [schoolId], references: [id])
+  user                  User?                   @relation("GovernanceQueryAuthor", fields: [userId], references: [id])
+  sources               GovernanceQuerySource[]
 
   @@index([schoolId, createdAt])
 }
@@ -697,43 +703,43 @@ model GovernanceQuerySource {
 }
 
 model CopilotRun {
-  id                      String                  @id @default(cuid())
-  schoolId                String
-  createdById             String?
-  title                   String                  @default("School 2.0 Copilot Run")
-  readinessScore          Int
-  maturityScore           Int
-  maturitySummary         String
-  blockers                Json?
-  nextActions             Json?
-  recommendedBundleKeys   Json?
-  recommendedPackKeys     Json?
-  suggestedTrainingKeys   Json?
-  plan30                  Json?
-  plan60                  Json?
-  plan90                  Json?
-  executiveSummary        String
-  createdAt               DateTime                @default(now())
-  createdBy               User?                   @relation("CopilotAuthor", fields: [createdById], references: [id])
-  school                  School                  @relation(fields: [schoolId], references: [id])
-  recommendations         CopilotRecommendation[]
+  id                    String                  @id @default(cuid())
+  schoolId              String
+  createdById           String?
+  title                 String                  @default("School 2.0 Copilot Run")
+  readinessScore        Int
+  maturityScore         Int
+  maturitySummary       String
+  blockers              Json?
+  nextActions           Json?
+  recommendedBundleKeys Json?
+  recommendedPackKeys   Json?
+  suggestedTrainingKeys Json?
+  plan30                Json?
+  plan60                Json?
+  plan90                Json?
+  executiveSummary      String
+  createdAt             DateTime                @default(now())
+  createdBy             User?                   @relation("CopilotAuthor", fields: [createdById], references: [id])
+  school                School                  @relation(fields: [schoolId], references: [id])
+  recommendations       CopilotRecommendation[]
 
   @@index([schoolId, createdAt])
 }
 
 model CopilotRecommendation {
-  id           String                   @id @default(cuid())
-  runId        String
-  schoolId     String
-  kind         CopilotRecommendationKind
-  title        String
-  description  String
-  status       RecommendationStatus     @default(PENDING)
-  metadata     Json?
-  createdAt    DateTime                 @default(now())
-  updatedAt    DateTime                 @updatedAt
-  run          CopilotRun               @relation(fields: [runId], references: [id])
-  school       School                   @relation(fields: [schoolId], references: [id])
+  id          String                    @id @default(cuid())
+  runId       String
+  schoolId    String
+  kind        CopilotRecommendationKind
+  title       String
+  description String
+  status      RecommendationStatus      @default(PENDING)
+  metadata    Json?
+  createdAt   DateTime                  @default(now())
+  updatedAt   DateTime                  @updatedAt
+  run         CopilotRun                @relation(fields: [runId], references: [id])
+  school      School                    @relation(fields: [schoolId], references: [id])
 
   @@index([schoolId, kind])
 }
@@ -934,6 +940,7 @@ enum ToolRiskLevel {
 
 enum RecommendationStatus {
   PENDING
+  RECOMMENDED
   ACCEPTED
   DEFERRED
   ARCHIVED

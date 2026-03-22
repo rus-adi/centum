@@ -3,44 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
-import {
-  Building2,
-  TrendingUp,
-  LayoutDashboard,
-  ShieldCheck,
-  Boxes,
-  Wrench,
-  Layers,
-  GraduationCap,
-  Megaphone,
-  ClipboardList,
-  BookOpen,
-  LifeBuoy,
-  Settings,
-  LineChart,
-  Handshake
-} from "lucide-react";
+import { getNavigationForRole } from "@/lib/navigation";
 
-const nav = [
-  { href: "/hq", label: "HQ Command Center", icon: Building2 },
-  { href: "/transformation", label: "Transformation Copilot", icon: TrendingUp },
-  { href: "/transformation/report", label: "Executive Report", icon: LineChart },
-  { href: "/dashboard", label: "Readiness & ROI", icon: LayoutDashboard },
-  { href: "/governance", label: "Governance & Support", icon: ShieldCheck },
-  { href: "/packs", label: "Transformation Packs", icon: Boxes },
-  { href: "/tools", label: "Tool Recommendations", icon: Wrench },
-  { href: "/stacks", label: "Bundles", icon: Layers },
-  { href: "/training", label: "Training Hub", icon: GraduationCap },
-  { href: "/growth", label: "Growth Assets", icon: Megaphone },
-  { href: "/partners", label: "Partner Ops", icon: Handshake },
-  { href: "/requests", label: "Requests", icon: ClipboardList },
-  { href: "/knowledge", label: "Knowledge Base", icon: BookOpen },
-  { href: "/support", label: "Support", icon: LifeBuoy },
-  { href: "/settings", label: "Settings", icon: Settings }
-];
-
-export function Sidebar() {
+export function Sidebar({ role }: { role?: string | null }) {
   const pathname = usePathname();
+  const nav = getNavigationForRole(role);
 
   return (
     <aside className="fixed left-0 top-0 hidden h-screen w-[272px] border-r border-[var(--border)] bg-white md:block">

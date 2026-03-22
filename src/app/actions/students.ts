@@ -8,7 +8,6 @@ import { parseCSV } from "@/lib/csv";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import type { Prisma } from "@prisma/client";
 
 function normalizeStudentCode(code: string | null | undefined) {
   const cleaned = (code ?? "").trim();
@@ -47,7 +46,7 @@ export async function createStudent(formData: FormData) {
   }
 
   try {
-    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    await prisma.$transaction(async (tx) => {
       const student = await tx.student.create({
         data: {
           schoolId,
@@ -111,7 +110,7 @@ export async function updateStudent(studentId: string, formData: FormData) {
   }
 
   try {
-    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    await prisma.$transaction(async (tx) => {
       const updated = await tx.student.update({
         where: { id: existing.id },
         data: {
@@ -156,7 +155,7 @@ export async function deleteStudent(studentId: string) {
   const existing = await prisma.student.findFirst({ where: { id: studentId, schoolId } });
   if (!existing) redirect("/students?error=Student not found");
 
-  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+  await prisma.$transaction(async (tx) => {
     await tx.student.delete({ where: { id: existing.id } });
 
     await auditLog(

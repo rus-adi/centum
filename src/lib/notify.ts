@@ -1,8 +1,10 @@
 import { prisma } from "@/lib/prisma";
+import type { NotificationType } from "@prisma/client";
+
 export async function notifyUser(params: {
   userId: string;
   schoolId?: string | null;
-  type?: "INFO" | "ALERT" | "ACTION";
+  type?: NotificationType;
   title: string;
   body?: string;
   link?: string;
@@ -15,7 +17,7 @@ export async function notifyUser(params: {
 
 export async function notifySchoolUsers(params: {
   schoolId: string;
-  type?: "INFO" | "ALERT" | "ACTION";
+  type?: NotificationType;
   title: string;
   body?: string;
   link?: string;

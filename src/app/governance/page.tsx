@@ -9,12 +9,14 @@ import { requireActiveSchool } from "@/lib/tenant";
 import { askGovernanceQuestion, pinGovernanceDocument, uploadGovernanceDocument } from "@/app/actions/governance";
 import { GOVERNANCE_CATEGORY_LABELS } from "@/lib/school2/governance";
 import { formatDateTime } from "@/lib/format";
+import { canManageGovernance } from "@/lib/permissions";
 
 const db = prisma as any;
 
 export default async function GovernancePage({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
-  const { schoolId } = await requireActiveSchool();
+  const { schoolId, session } = await requireActiveSchool();
   const queryId = typeof searchParams.query === "string" ? searchParams.query : null;
+  const canManage = canManageGovernance(session.user.role);
 
   const [documents, queries, activeQuery] = await Promise.all([
     db.governanceDocument.findMany({
@@ -61,9 +63,12 @@ export default async function GovernancePage({ searchParams }: { searchParams: {
 
             {activeQuery ? (
               <div className="space-y-3 rounded-lg border border-[var(--border)] bg-slate-50 p-4">
-                <div>
-                  <div className="text-sm font-semibold text-gray-900">Latest answer</div>
-                  <div className="mt-1 text-xs text-gray-500">Confidence {activeQuery.confidence}%</div>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-semibold text-gray-900">Latest answer</div>
+                    <div className="mt-1 text-xs text-gray-500">Confidence {activeQuery.confidence}%</div>
+                  </div>
+                  {activeQuery.lowConfidence ? <Badge variant="warning">Escalate to leadership</Badge> : <Badge variant="success">Document-backed answer</Badge>}
                 </div>
                 <p className="whitespace-pre-line text-sm leading-6 text-gray-700">{activeQuery.answer}</p>
                 {activeQuery.lowConfidence ? (
@@ -77,7 +82,7 @@ export default async function GovernancePage({ searchParams }: { searchParams: {
                       key={source.id}
                       title={source.document?.title ?? "Source"}
                       quote={source.quote ?? ""}
-                      href={source.versionId ? `/api/governance-files/${source.versionId}` : undefined}
+                      href={source.versionId ? `/governance/source/${source.versionId}` : undefined}
                       meta={source.version ? `Version ${source.version.version}` : undefined}
                     />
                   ))}
@@ -87,56 +92,76 @@ export default async function GovernancePage({ searchParams }: { searchParams: {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Upload or paste a governance document</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form className="space-y-3" action={uploadGovernanceDocument}>
-              <input name="title" className="w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm" placeholder="Document title" />
-              <select name="category" className="w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm">
-                {Object.entries(GOVERNANCE_CATEGORY_LABELS).map(([key, label]) => (
-                  <option key={key} value={key}>{label}</option>
-                ))}
-              </select>
-              <input name="summary" className="w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm" placeholder="Short summary" />
-              <input name="originalFilename" className="w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm" placeholder="Original filename (optional)" />
-              <textarea name="body" className="min-h-[180px] w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm" placeholder="Paste SOP text, policy text, or leadership notes here" />
-              <Button variant="primary" type="submit">Save document</Button>
-            </form>
-          </CardContent>
-        </Card>
+        {canManage ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Upload or paste a governance document</CardTitle>
+              <p className="mt-2 text-sm text-gray-600">Leadership-only controls are hidden from non-admin roles to keep demo paths cleaner.</p>
+            </CardHeader>
+            <CardContent>
+              <form className="space-y-3" action={uploadGovernanceDocument}>
+                <input name="title" className="w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm" placeholder="Document title" />
+                <select name="category" className="w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm">
+                  {Object.entries(GOVERNANCE_CATEGORY_LABELS).map(([key, label]) => (
+                    <option key={key} value={key}>{label}</option>
+                  ))}
+                </select>
+                <input name="summary" className="w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm" placeholder="Short summary" />
+                <input name="originalFilename" className="w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm" placeholder="Original filename (optional)" />
+                <textarea name="body" className="min-h-[180px] w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm" placeholder="Paste SOP text, policy text, or leadership notes here" />
+                <Button variant="primary" type="submit">Save governance document</Button>
+              </form>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>Leadership document controls</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm text-gray-600">
+              <div className="rounded-lg border border-[var(--border)] bg-slate-50 p-4">
+                Document upload, pinning, and version management are hidden for your role. You can still ask questions and open source previews.
+              </div>
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-blue-900">
+                For investor teacher demos, this keeps the experience focused on retrieval, training, and packaged services rather than admin workflows.
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-[1.1fr,0.9fr]">
         <Card>
           <CardHeader>
-            <CardTitle>Documents</CardTitle>
+            <CardTitle>Document library</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {documents.length ? (
               documents.map((document: any) => {
-                const latest = document.versions[0];
+                const latest = document.versions[0] ?? null;
                 return (
                   <div key={document.id} className="rounded-lg border border-[var(--border)] p-4">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
                           <Link className="font-semibold text-gray-900 hover:underline" href={`/governance/documents/${document.id}`}>
                             {document.title}
                           </Link>
-                          <Badge variant={document.pinned ? "success" : "neutral"}>{GOVERNANCE_CATEGORY_LABELS[document.category] ?? document.category}</Badge>
+                          <Badge variant={document.pinned ? "warning" : "info"}>{document.pinned ? "Pinned" : "Active"}</Badge>
                         </div>
-                        <div className="mt-1 text-sm text-gray-600">{document.summary || document.description || "No summary yet."}</div>
+                        <div className="mt-2 text-sm text-gray-600">{GOVERNANCE_CATEGORY_LABELS[document.category] ?? document.category}</div>
+                        {document.summary ? <div className="mt-2 text-sm text-gray-600">{document.summary}</div> : null}
+                        <div className="mt-2 text-xs text-gray-500">
+                          {latest ? `Latest version ${latest.version} • updated ${formatDateTime(new Date(document.updatedAt))}` : "No versions yet"}
+                        </div>
                       </div>
-                      <form action={pinGovernanceDocument}>
-                        <input type="hidden" name="documentId" value={document.id} />
-                        <input type="hidden" name="pinned" value={document.pinned ? "false" : "true"} />
-                        <Button variant="secondary" type="submit">{document.pinned ? "Unpin" : "Pin"}</Button>
-                      </form>
-                    </div>
-                    <div className="mt-3 text-xs text-gray-500">
-                      {latest ? `Version ${latest.version} • Updated ${formatDateTime(new Date(latest.createdAt))}` : "No versions yet"}
+                      {canManage ? (
+                        <form action={pinGovernanceDocument}>
+                          <input type="hidden" name="documentId" value={document.id} />
+                          <input type="hidden" name="pinned" value={document.pinned ? "false" : "true"} />
+                          <Button variant="ghost" type="submit">{document.pinned ? "Unpin" : "Pin"}</Button>
+                        </form>
+                      ) : null}
                     </div>
                   </div>
                 );
@@ -149,17 +174,17 @@ export default async function GovernancePage({ searchParams }: { searchParams: {
 
         <Card>
           <CardHeader>
-            <CardTitle>Recent question history</CardTitle>
+            <CardTitle>Recent governance questions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {queries.length ? (
               queries.map((query: any) => (
                 <div key={query.id} className="rounded-lg border border-[var(--border)] p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="text-sm font-semibold text-gray-900">{query.question}</div>
-                    <Badge variant={query.lowConfidence ? "warning" : "info"}>{query.confidence}%</Badge>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="font-medium text-gray-900">{query.question}</div>
+                    <Badge variant={query.lowConfidence ? "warning" : "success"}>{query.confidence}% confidence</Badge>
                   </div>
-                  <div className="mt-2 line-clamp-3 text-sm text-gray-600">{query.answer}</div>
+                  <div className="mt-2 line-clamp-3 text-sm leading-6 text-gray-600">{query.answer}</div>
                   <Link className="mt-3 inline-block text-sm font-medium text-blue-700 hover:underline" href={`/governance?query=${query.id}`}>
                     Open answer →
                   </Link>
