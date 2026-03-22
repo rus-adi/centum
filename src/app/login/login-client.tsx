@@ -58,95 +58,97 @@ export function LoginClient({ error }: { error?: string | null }) {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-10">
-      <div className="grid w-full max-w-6xl gap-6 lg:grid-cols-[0.92fr,1.08fr] lg:gap-8">
-        <Card className="h-full">
-          <CardHeader>
-            <div className="text-xs uppercase tracking-[0.22em] text-gray-500">School 2.0 Platform</div>
-            <CardTitle>Centum Stack</CardTitle>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-gray-600">
-              Sign in to continue your transformation work. In seeded demo environments, all demo personas use the password <span className="font-medium text-gray-900">password</span>.
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {err && (
-              <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                {err === "account_disabled"
-                  ? "Your account is disabled. Contact an administrator."
-                  : "Login failed. Check your email/password and try again."}
-              </div>
-            )}
+      <Card className="w-full max-w-7xl overflow-hidden">
+        <div className="grid lg:grid-cols-[minmax(320px,0.88fr),minmax(0,1.12fr)]">
+          <section className="border-b border-[var(--border)] lg:border-b-0 lg:border-r">
+            <CardHeader className="pb-0">
+              <div className="text-xs uppercase tracking-[0.22em] text-gray-500">School 2.0 Platform</div>
+              <CardTitle>Centum Stack</CardTitle>
+              <p className="mt-2 max-w-xl text-sm leading-6 text-gray-600">
+                Sign in to continue your transformation work. In seeded demo environments, all demo personas use the password <span className="font-medium text-gray-900">password</span>.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-6">
+              {err && (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  {err === "account_disabled"
+                    ? "Your account is disabled. Contact an administrator."
+                    : "Login failed. Check your email/password and try again."}
+                </div>
+              )}
 
-            <form
-              className="space-y-3"
-              onSubmit={async (e) => {
-                e.preventDefault();
-                setLoading(true);
-                await signIn("credentials", { email, password, callbackUrl: "/" });
-                setLoading(false);
-              }}
-            >
-              <div className="field-stack">
-                <label className="mb-1 block text-sm font-medium text-gray-700">Email</label>
-                <Input name="email" type="email" required placeholder="you@school.id" value={email} onChange={(e) => setEmail(e.target.value)} />
-              </div>
-              <div className="field-stack">
-                <label className="mb-1 block text-sm font-medium text-gray-700">Password</label>
-                <Input name="password" type="password" required placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} />
-              </div>
-              <Button variant="primary" className="w-full" disabled={loading} type="submit">
-                {loading ? "Signing in..." : "Sign In"}
-              </Button>
+              <form
+                className="space-y-3"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setLoading(true);
+                  await signIn("credentials", { email, password, callbackUrl: "/" });
+                  setLoading(false);
+                }}
+              >
+                <div className="field-stack">
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Email</label>
+                  <Input name="email" type="email" required placeholder="you@school.id" value={email} onChange={(e) => setEmail(e.target.value)} />
+                </div>
+                <div className="field-stack">
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Password</label>
+                  <Input name="password" type="password" required placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} />
+                </div>
+                <Button variant="primary" className="w-full" disabled={loading} type="submit">
+                  {loading ? "Signing in..." : "Sign In"}
+                </Button>
 
-              <div className="flex flex-col gap-2 pt-2 text-sm sm:flex-row sm:items-center sm:justify-between">
-                <a className="text-blue-700 hover:underline" href="/forgot">
-                  Forgot password?
-                </a>
-                <span className="text-gray-500">Use your invite link to join.</span>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+                <div className="flex flex-col gap-2 pt-2 text-sm sm:flex-row sm:items-center sm:justify-between">
+                  <a className="text-blue-700 hover:underline" href="/forgot">
+                    Forgot password?
+                  </a>
+                  <span className="text-gray-500">Use your invite link to join.</span>
+                </div>
+              </form>
+            </CardContent>
+          </section>
 
-        <Card className="h-full">
-          <CardHeader>
-            <div className="text-xs uppercase tracking-[0.22em] text-gray-500">Investor demo paths</div>
-            <CardTitle>Quick-fill a demo persona</CardTitle>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-600">
-              These shortcuts make it easier to explore the same platform from HQ, school-leadership, and teacher perspectives without memorizing seeded accounts.
-            </p>
-          </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-            {demoPersonas.map((persona) => {
-              const Icon = persona.icon;
-              return (
-                <button
-                  key={persona.key}
-                  type="button"
-                  onClick={() => {
-                    setEmail(persona.email);
-                    setPassword("password");
-                  }}
-                  className="flex h-full flex-col rounded-2xl border border-[var(--border)] bg-white p-4 text-left shadow-card transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50/40"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="rounded-2xl border border-blue-200 bg-blue-50 p-2.5 text-blue-700">
-                      <Icon className="h-4 w-4" />
+          <section className="bg-slate-50/70">
+            <CardHeader>
+              <div className="text-xs uppercase tracking-[0.22em] text-gray-500">Investor demo paths</div>
+              <CardTitle>Quick-fill a demo persona</CardTitle>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-600">
+                These shortcuts make it easier to explore the same platform from HQ, school-leadership, and teacher perspectives without memorizing seeded accounts.
+              </p>
+            </CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+              {demoPersonas.map((persona) => {
+                const Icon = persona.icon;
+                return (
+                  <button
+                    key={persona.key}
+                    type="button"
+                    onClick={() => {
+                      setEmail(persona.email);
+                      setPassword("password");
+                    }}
+                    className="flex h-full flex-col rounded-2xl border border-[var(--border)] bg-white p-4 text-left shadow-card transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50/40"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="rounded-2xl border border-blue-200 bg-blue-50 p-2.5 text-blue-700">
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-gray-400" />
                     </div>
-                    <ArrowRight className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <div className="mt-4 text-xl font-semibold leading-7 text-gray-900">{persona.title}</div>
-                  <div className="mt-1 text-sm leading-6 text-gray-600">{persona.subtitle}</div>
-                  <div className="mt-4 rounded-xl border border-[var(--border)] bg-slate-50 px-3 py-2.5 text-xs font-medium leading-5 text-gray-700">
-                    <span className="block break-all">{persona.email}</span>
-                  </div>
-                  <div className="mt-4 text-sm leading-7 text-gray-600">{persona.roleHint}</div>
-                  <div className="mt-auto pt-5 text-xs font-semibold uppercase tracking-[0.16em] text-blue-700">Click to fill credentials</div>
-                </button>
-              );
-            })}
-          </CardContent>
-        </Card>
-      </div>
+                    <div className="mt-4 text-xl font-semibold leading-7 text-gray-900">{persona.title}</div>
+                    <div className="mt-1 text-sm leading-6 text-gray-600">{persona.subtitle}</div>
+                    <div className="mt-4 rounded-xl border border-[var(--border)] bg-slate-50 px-3 py-2.5 text-xs font-medium leading-5 text-gray-700">
+                      <span className="block break-all">{persona.email}</span>
+                    </div>
+                    <div className="mt-4 text-sm leading-7 text-gray-600">{persona.roleHint}</div>
+                    <div className="mt-auto pt-5 text-xs font-semibold uppercase tracking-[0.16em] text-blue-700">Click to fill credentials</div>
+                  </button>
+                );
+              })}
+            </CardContent>
+          </section>
+        </div>
+      </Card>
     </div>
   );
 }
